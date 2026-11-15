@@ -13,6 +13,8 @@ import {
   signInWithGoogleConsoleOAuth, 
   signOutGoogleConsole, 
   isGoogleClientIdConfigured,
+  handleGoogleOAuthCallback,
+  initiateGoogleRedirectOAuth,
   GoogleAuthUser 
 } from './googleOAuth';
 
