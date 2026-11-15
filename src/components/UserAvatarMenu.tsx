@@ -82,18 +82,9 @@ export const UserAvatarMenu: React.FC<UserAvatarMenuProps> = ({ compact = false 
                 <div className="text-[11px] text-slate-400 truncate font-mono-code">
                   {user.email}
                 </div>
-                <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-300">
-                  {isDemoUser ? (
-                    <>
-                      <Sparkles className="w-3 h-3 text-amber-400" />
-                      <span>Guest Demo Account</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                      <span>Google Verified Identity</span>
-                    </>
-                  )}
+                <div className="mt-1 flex items-center gap-1 text-[10px] text-emerald-400">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Google Account</span>
                 </div>
               </div>
             </div>
