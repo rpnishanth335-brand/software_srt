@@ -9,6 +9,16 @@ export class ChronoForgeDatabase extends Dexie {
     this.version(1).stores({
       projects: 'id, updatedAt, school.name',
     });
+    // Version 2: Index projects by userId for per-user isolation
+    this.version(2).stores({
+      projects: 'id, userId, updatedAt, school.name',
+    }).upgrade(tx => {
+      return tx.table('projects').toCollection().modify(project => {
+        if (!project.userId) {
+          project.userId = 'demo_administrator_uid';
+        }
+      });
+    });
   }
 }
 
@@ -19,13 +29,14 @@ export const isIndexedDBAvailable = (): boolean => {
 };
 
 /**
- * Persist a complete project to IndexedDB.
+ * Persist a complete project to IndexedDB, namespaced by user uid.
  */
-export async function saveProjectToDB(project: Project): Promise<void> {
+export async function saveProjectToDB(project: Project, userId?: string): Promise<void> {
   if (!isIndexedDBAvailable()) return;
   try {
     await db.projects.put({
       ...project,
+      userId: userId || project.userId || 'demo_administrator_uid',
       updatedAt: Date.now(),
     });
   } catch (e) {
@@ -46,11 +57,14 @@ export async function loadProjectFromDB(id: string): Promise<Project | undefined
 }
 
 /**
- * List all saved projects in IndexedDB, sorted by most recently updated.
+ * List all saved projects in IndexedDB, optionally filtered by userId.
  */
-export async function listSavedProjects(): Promise<Project[]> {
+export async function listSavedProjects(userId?: string): Promise<Project[]> {
   if (!isIndexedDBAvailable()) return [];
   try {
+    if (userId) {
+      return await db.projects.where('userId').equals(userId).reverse().sortBy('updatedAt');
+    }
     return await db.projects.orderBy('updatedAt').reverse().toArray();
   } catch {
     return [];
@@ -58,7 +72,7 @@ export async function listSavedProjects(): Promise<Project[]> {
 }
 
 /**
- * Delete a project from IndexedDB.
+ * Delete a saved project from IndexedDB.
  */
 export async function deleteProjectFromDB(id: string): Promise<void> {
   if (!isIndexedDBAvailable()) return;
