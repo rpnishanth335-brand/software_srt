@@ -6,9 +6,7 @@ import {
   Check, 
   X, 
   ShieldCheck, 
-  AlertCircle,
-  HelpCircle,
-  Sparkles
+  AlertCircle
 } from 'lucide-react';
 import { getGoogleClientId, setStoredGoogleClientId } from '../auth/googleOAuth';
 
