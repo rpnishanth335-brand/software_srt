@@ -158,11 +158,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleDemoClick = () => {
-    continueAsDemo();
-    setIsSuccess(true);
-  };
-
   return (
     <div className="min-h-[100dvh] w-full flex flex-col lg:flex-row relative overflow-hidden bg-[#07050d] text-slate-100 font-sans">
       {/* Background Layer 1: Ambient Plasma Blobs */}
