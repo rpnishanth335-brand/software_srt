@@ -8,7 +8,7 @@ interface UserAvatarMenuProps {
 }
 
 export const UserAvatarMenu: React.FC<UserAvatarMenuProps> = ({ compact = false }) => {
-  const { user, signOut, isDemoUser } = useAuth();
+  const { user, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [showConfirmLogout, setShowConfirmLogout] = useState(false);
 
