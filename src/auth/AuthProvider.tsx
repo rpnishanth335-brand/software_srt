@@ -205,8 +205,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // If neither is configured yet, open the Google Cloud Console Configuration Modal
-    setShowConfigModal(true);
+    // If neither is configured yet, show configuration notice
+    setError('Google OAuth Client ID is not configured. Please verify your environment settings.');
   };
 
   // Sign Out Flow
