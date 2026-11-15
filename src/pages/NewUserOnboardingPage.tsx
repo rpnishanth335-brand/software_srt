@@ -379,7 +379,7 @@ export const NewUserOnboardingPage: React.FC<NewUserOnboardingPageProps> = ({ on
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {breaks.map((brk, idx) => (
+                {breaks.map((brk) => (
                   <div key={brk.id} className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-white">{brk.name}</span>
