@@ -366,15 +366,15 @@ export const LoginPage: React.FC = () => {
                 )}
               </button>
 
-              {/* Guest / Demo Option */}
+              {/* Google Cloud Console OAuth Configuration / Status */}
               <button
                 type="button"
-                onClick={handleDemoClick}
-                disabled={loading || isSuccess}
-                className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl text-xs font-semibold text-slate-400 hover:text-white bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 transition-colors flex items-center justify-center gap-2"
+                onClick={() => setShowConfigModal(true)}
+                className="w-full min-h-[40px] px-4 py-2 rounded-2xl text-xs font-medium text-slate-400 hover:text-amber-300 bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 transition-colors flex items-center justify-center gap-2"
+                title="Configure Google Cloud Console OAuth 2.0 Credentials"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Continue as Demo Guest (No Login Required)</span>
+                <Key className="w-3.5 h-3.5 text-amber-400" />
+                <span>Google Console OAuth Settings</span>
               </button>
             </div>
 
@@ -391,6 +391,13 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Google Cloud Console OAuth Configuration Modal */}
+      <GoogleConsoleConfigModal
+        isOpen={showConfigModal}
+        onClose={() => setShowConfigModal(false)}
+        onConnectAndSignIn={signInWithGoogle}
+      />
     </div>
   );
 };
