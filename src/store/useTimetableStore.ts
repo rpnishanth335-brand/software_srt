@@ -184,6 +184,23 @@ export const useTimetableStore = create<TimetableState>()(
         get().persistToDatabase();
       },
 
+      completeOnboarding: (schoolDetails) => {
+        set((state) => ({
+          project: {
+            ...state.project,
+            hasCompletedSetup: true,
+            school: {
+              ...state.project.school,
+              ...schoolDetails,
+              isConfigured: true,
+            },
+            updatedAt: Date.now(),
+          },
+          isDirty: true,
+        }));
+        get().persistToDatabase();
+      },
+
       setWorkingDays: (days) => {
         set((state) => {
           const currentPeriods = { ...state.project.school.periodsByDay };
