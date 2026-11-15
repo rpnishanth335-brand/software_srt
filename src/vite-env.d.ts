@@ -1,7 +1,13 @@
 /// <reference types="vite/client" />
 
+declare const __GOOGLE_CLIENT_ID__: string;
+declare const __GOOGLE_REDIRECT_URI__: string;
+
 interface ImportMetaEnv {
+  readonly GOOGLE_CLIENT_ID?: string;
+  readonly GOOGLE_REDIRECT_URI?: string;
   readonly VITE_GOOGLE_CLIENT_ID?: string;
+  readonly VITE_GOOGLE_REDIRECT_URI?: string;
   readonly VITE_FIREBASE_API_KEY?: string;
   readonly VITE_FIREBASE_AUTH_DOMAIN?: string;
   readonly VITE_FIREBASE_PROJECT_ID?: string;
