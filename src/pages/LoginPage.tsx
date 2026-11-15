@@ -360,39 +360,33 @@ export const LoginPage: React.FC = () => {
                   </>
                 )}
               </button>
-
-              {/* Google Cloud Console OAuth Configuration / Status */}
-              <button
-                type="button"
-                onClick={() => setShowConfigModal(true)}
-                className="w-full min-h-[40px] px-4 py-2 rounded-2xl text-xs font-medium text-slate-400 hover:text-amber-300 bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 transition-colors flex items-center justify-center gap-2"
-                title="Configure Google Cloud Console OAuth 2.0 Credentials"
-              >
-                <Key className="w-3.5 h-3.5 text-amber-400" />
-                <span>Google Console OAuth Settings</span>
-              </button>
             </div>
 
-            {/* Security Guarantee */}
-            <div className="pt-2 border-t border-white/10 text-center space-y-2">
-              <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Your school data remains 100% private in browser storage</span>
+            {/* Institutional Security Highlights */}
+            <div className="pt-3 border-t border-white/10 space-y-2.5">
+              <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400">
+                <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-white/[0.02] border border-white/5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Google SSO 2.0</span>
+                </div>
+                <div className="flex items-center gap-1.5 p-1.5 rounded-lg bg-white/[0.02] border border-white/5">
+                  <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>100% Private Offline</span>
+                </div>
               </div>
-              <p className="text-[10px] text-slate-500">
-                By signing in, you accept the ChronoForge open-source terms and privacy policy.
-              </p>
+
+              <div className="text-center space-y-1">
+                <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
+                  <span>Encrypted in local browser storage (IndexedDB)</span>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  By signing in, you access the institutional scheduling ERP under terms of service.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Google Cloud Console OAuth Configuration Modal */}
-      <GoogleConsoleConfigModal
-        isOpen={showConfigModal}
-        onClose={() => setShowConfigModal(false)}
-        onConnectAndSignIn={signInWithGoogle}
-      />
     </div>
   );
 };
