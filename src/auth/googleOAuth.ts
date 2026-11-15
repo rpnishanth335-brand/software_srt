@@ -65,6 +65,15 @@ export const isGoogleClientIdConfigured = (): boolean => {
 };
 
 /**
+ * Computes standard Authorized Redirect URI (callback URL) for current origin.
+ */
+export const getGoogleRedirectUri = (): string => {
+  if (typeof window === 'undefined') return 'https://software-srt.vercel.app/auth/callback';
+  const origin = window.location.origin;
+  return `${origin}/auth/callback`;
+};
+
+/**
  * Loads the official Google Identity Services script asynchronously.
  */
 export const loadGoogleIdentityScript = (): Promise<void> => {
@@ -123,8 +132,140 @@ export const setStoredGoogleUser = (user: GoogleAuthUser | null) => {
 };
 
 /**
+ * Helper to decode JWT without external dependencies.
+ */
+export const parseJwt = (token: string): any => {
+  try {
+    const base64Url = token.split('.')[1];
+    if (!base64Url) return null;
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.warn('[GoogleOAuth] Failed to parse JWT token:', e);
+    return null;
+  }
+};
+
+/**
+ * Initiates the Google OAuth 2.0 full browser redirect flow.
+ * Redirects the user to Google's standard OAuth endpoint, returning to Authorized Redirect URI.
+ */
+export const initiateGoogleRedirectOAuth = (clientId?: string) => {
+  const activeClientId = (clientId || getGoogleClientId()).trim();
+  if (!activeClientId) {
+    throw new Error('Google Cloud Console Client ID is missing. Please configure VITE_GOOGLE_CLIENT_ID.');
+  }
+
+  const redirectUri = getGoogleRedirectUri();
+  const nonce = Math.random().toString(36).substring(2, 15);
+  const state = Math.random().toString(36).substring(2, 15);
+
+  const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+  authUrl.searchParams.set('client_id', activeClientId);
+  authUrl.searchParams.set('redirect_uri', redirectUri);
+  authUrl.searchParams.set('response_type', 'token id_token');
+  authUrl.searchParams.set('scope', 'openid email profile');
+  authUrl.searchParams.set('nonce', nonce);
+  authUrl.searchParams.set('state', state);
+  authUrl.searchParams.set('prompt', 'select_account');
+
+  // Navigate to Google OAuth
+  window.location.assign(authUrl.toString());
+};
+
+/**
+ * Inspects the current URL hash/search for OAuth callback tokens (access_token or id_token).
+ * If present, fetches profile info, persists session, cleans URL, and returns the user.
+ */
+export const handleGoogleOAuthCallback = async (): Promise<GoogleAuthUser | null> => {
+  if (typeof window === 'undefined') return null;
+
+  const hash = window.location.hash ? window.location.hash.substring(1) : '';
+  const search = window.location.search ? window.location.search.substring(1) : '';
+  const rawParams = hash || search;
+
+  if (!rawParams) return null;
+
+  const params = new URLSearchParams(rawParams);
+  const accessToken = params.get('access_token');
+  const idToken = params.get('id_token');
+  const error = params.get('error');
+
+  if (error) {
+    console.error('[GoogleOAuth] Callback returned error:', error, params.get('error_description'));
+    throw new Error(params.get('error_description') || error);
+  }
+
+  if (!accessToken && !idToken) {
+    return null;
+  }
+
+  try {
+    let profile: GoogleUserProfile | null = null;
+
+    // 1. Try UserInfo API with access_token
+    if (accessToken) {
+      try {
+        const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (response.ok) {
+          profile = await response.json();
+        }
+      } catch (fetchErr) {
+        console.warn('[GoogleOAuth] UserInfo fetch failed, falling back to id_token:', fetchErr);
+      }
+    }
+
+    // 2. Fallback to decoding id_token
+    if (!profile && idToken) {
+      const decoded = parseJwt(idToken);
+      if (decoded && decoded.sub) {
+        profile = {
+          sub: decoded.sub,
+          name: decoded.name || decoded.email?.split('@')[0] || 'User',
+          email: decoded.email,
+          picture: decoded.picture,
+        };
+      }
+    }
+
+    if (!profile) {
+      throw new Error('Unable to extract user profile from Google callback tokens.');
+    }
+
+    const authUser: GoogleAuthUser = {
+      uid: profile.sub,
+      displayName: profile.name || profile.email.split('@')[0],
+      email: profile.email,
+      photoURL: profile.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'User')}&background=f59e0b&color=fff`,
+      providerId: 'google.com',
+      authSource: 'google_console',
+      accessToken: accessToken || undefined,
+    };
+
+    setStoredGoogleUser(authUser);
+
+    // Clean up browser address bar (remove hash and /auth/callback path)
+    const cleanPath = window.location.pathname.replace('/auth/callback', '') || '/';
+    window.history.replaceState({}, document.title, cleanPath);
+
+    return authUser;
+  } catch (err) {
+    console.error('[GoogleOAuth] Error handling OAuth callback:', err);
+    throw err;
+  }
+};
+
+/**
  * Initiates the Google OAuth 2.0 popup flow via Google Identity Services Token Client.
- * Requests 'openid profile email' scopes, then fetches profile information from Google UserInfo endpoint.
+ * Falls back seamlessly to full redirect flow if popups are blocked or on mobile.
  */
 export const signInWithGoogleConsoleOAuth = async (clientId?: string): Promise<GoogleAuthUser> => {
   const activeClientId = (clientId || getGoogleClientId()).trim();
@@ -133,12 +274,22 @@ export const signInWithGoogleConsoleOAuth = async (clientId?: string): Promise<G
     throw new Error('Google Cloud Console Client ID is missing. Please configure VITE_GOOGLE_CLIENT_ID.');
   }
 
-  // Ensure script is loaded
+  // Detect mobile devices - prefer redirect flow on mobile
+  const isMobile = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (isMobile) {
+    initiateGoogleRedirectOAuth(activeClientId);
+    // Returns a pending promise since browser redirects
+    return new Promise(() => {});
+  }
+
+  // Load GIS script
   await loadGoogleIdentityScript();
 
   const google = (window as any).google;
   if (!google?.accounts?.oauth2) {
-    throw new Error('Google Identity Services SDK failed to initialize. Please check network connection.');
+    // If GIS fails to load, use direct redirect flow
+    initiateGoogleRedirectOAuth(activeClientId);
+    return new Promise(() => {});
   }
 
   return new Promise((resolve, reject) => {
@@ -158,7 +309,6 @@ export const signInWithGoogleConsoleOAuth = async (clientId?: string): Promise<G
           }
 
           try {
-            // Fetch User Profile from Google's standard UserInfo API
             const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
               headers: {
                 Authorization: `Bearer ${tokenResponse.access_token}`,
@@ -189,16 +339,16 @@ export const signInWithGoogleConsoleOAuth = async (clientId?: string): Promise<G
           }
         },
         error_callback: (err: any) => {
-          console.error('[GoogleOAuth] Error callback:', err);
-          reject(new Error(err?.message || 'Google OAuth popup encountered an error.'));
+          console.warn('[GoogleOAuth] Popup blocked or failed, falling back to redirect...', err);
+          initiateGoogleRedirectOAuth(activeClientId);
         },
       });
 
       // Launch popup
       tokenClient.requestAccessToken();
     } catch (initErr: any) {
-      console.error('[GoogleOAuth] InitTokenClient error:', initErr);
-      reject(initErr);
+      console.warn('[GoogleOAuth] TokenClient error, redirecting...', initErr);
+      initiateGoogleRedirectOAuth(activeClientId);
     }
   });
 };
