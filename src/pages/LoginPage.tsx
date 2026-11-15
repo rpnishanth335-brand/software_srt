@@ -3,7 +3,6 @@ import { useAuth } from '../auth/useAuth';
 import { ChronoForgeLogo } from '../components/ChronoForgeLogo';
 import { GoogleConsoleConfigModal } from '../components/GoogleConsoleConfigModal';
 import { 
-  Sparkles, 
   Flame, 
   ShieldCheck, 
   AlertCircle, 
