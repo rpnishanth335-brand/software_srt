@@ -149,6 +149,7 @@ export interface RuleConfig {
 
 export interface Project {
   id: ID;
+  userId?: string;
   school: School;
   classes: ClassRoom[];
   subjects: Subject[];
@@ -169,6 +170,7 @@ export interface ToastNotification {
 }
 
 export type AppRoute =
+  | 'login'
   | 'dashboard'
   | 'school'
   | 'school-settings'
