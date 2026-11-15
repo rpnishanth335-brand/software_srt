@@ -67,7 +67,6 @@ export const AppShell: React.FC<AppShellProps> = ({
     currentRoute, 
     setCurrentRoute, 
     loadDemoSchool, 
-    resetProject, 
     undo, 
     redo, 
     undoStack, 
@@ -526,7 +525,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       <ToastContainer />
 
       {/* Natural Language AI Assistant Modal */}
-      {showAiModal && <AiAssistantModal onClose={() => setShowAiModal(false)} />}
+      {showAiModal && <AiAssistantModal isOpen={showAiModal} onClose={() => setShowAiModal(false)} />}
     </div>
   );
 };
