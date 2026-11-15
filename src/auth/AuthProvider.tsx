@@ -73,54 +73,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasGoogleConsole = isGoogleClientIdConfigured();
   const isConfigured = hasFirebase || hasGoogleConsole;
 
-  // 1. Initial Session Restoration
+  // 1. Initial Session Restoration & OAuth Callback Processing
   useEffect(() => {
-    // 1a. Check stored Google Cloud Console OAuth session
-    const storedGoogle = getStoredGoogleUser();
-    if (storedGoogle) {
-      setUser(storedGoogle);
-      setLoading(false);
-      return;
-    }
-
-    // 1b. Check Firebase redirect result & auth state if Firebase is available
-    if (auth && hasFirebase) {
-      getRedirectResult(auth)
-        .then((result) => {
-          if (result?.user) {
-            setUser({
-              uid: result.user.uid,
-              displayName: result.user.displayName,
-              email: result.user.email,
-              photoURL: result.user.photoURL,
-              providerId: 'google.com',
-              authSource: 'firebase',
-            });
-          }
-        })
-        .catch((err: any) => {
-          console.error('[Firebase] Redirect error:', err);
-          setError(formatAuthError(err?.code || ''));
-        });
-
-      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-        if (firebaseUser) {
-          setUser({
-            uid: firebaseUser.uid,
-            displayName: firebaseUser.displayName,
-            email: firebaseUser.email,
-            photoURL: firebaseUser.photoURL,
-            providerId: 'google.com',
-            authSource: 'firebase',
-          });
+    // 1a. Handle incoming Google OAuth redirect callback (tokens in URL)
+    handleGoogleOAuthCallback()
+      .then((callbackUser) => {
+        if (callbackUser) {
+          setUser(callbackUser);
+          setLoading(false);
+          return;
         }
+
+        // 1b. Check stored Google Cloud Console OAuth session
+        const storedGoogle = getStoredGoogleUser();
+        if (storedGoogle) {
+          setUser(storedGoogle);
+          setLoading(false);
+          return;
+        }
+
+        // 1c. Check Firebase redirect result & auth state if Firebase is available
+        if (auth && hasFirebase) {
+          getRedirectResult(auth)
+            .then((result) => {
+              if (result?.user) {
+                setUser({
+                  uid: result.user.uid,
+                  displayName: result.user.displayName,
+                  email: result.user.email,
+                  photoURL: result.user.photoURL,
+                  providerId: 'google.com',
+                  authSource: 'firebase',
+                });
+              }
+            })
+            .catch((err: any) => {
+              console.error('[Firebase] Redirect error:', err);
+              setError(formatAuthError(err?.code || ''));
+            });
+
+          const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+            if (firebaseUser) {
+              setUser({
+                uid: firebaseUser.uid,
+                displayName: firebaseUser.displayName,
+                email: firebaseUser.email,
+                photoURL: firebaseUser.photoURL,
+                providerId: 'google.com',
+                authSource: 'firebase',
+              });
+            }
+            setLoading(false);
+          });
+
+          return () => unsubscribe();
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch((callbackErr: any) => {
+        console.error('[GoogleOAuth] Callback error:', callbackErr);
+        setError(formatAuthError(callbackErr?.message || 'Failed to authenticate via Google redirect.'));
         setLoading(false);
       });
-
-      return () => unsubscribe();
-    } else {
-      setLoading(false);
-    }
   }, [hasFirebase]);
 
   // Detect mobile device
