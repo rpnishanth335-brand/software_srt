@@ -196,7 +196,7 @@ export const GoogleConsoleConfigModal: React.FC<GoogleConsoleConfigModalProps> =
                 className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-slate-100 placeholder-slate-500 text-xs focus:border-amber-400 focus:outline-none font-mono-code"
               />
               <p className="text-[10px] text-slate-400 mt-1">
-                Saved in your project's <code className="text-amber-300">.env</code> as <code className="text-amber-300">VITE_GOOGLE_CLIENT_ID</code>.
+                Saved in Vercel & <code className="text-amber-300">.env</code> as <code className="text-amber-300">GOOGLE_CLIENT_ID</code>.
               </p>
             </div>
           </div>
