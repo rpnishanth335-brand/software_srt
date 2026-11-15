@@ -296,22 +296,12 @@ export const signInWithGoogleConsoleOAuth = async (clientId?: string): Promise<G
     throw new Error('Google Cloud Console Client ID is missing. Please configure VITE_GOOGLE_CLIENT_ID.');
   }
 
-  // Detect mobile devices - prefer redirect flow on mobile
-  const isMobile = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  if (isMobile) {
-    initiateGoogleRedirectOAuth(activeClientId);
-    // Returns a pending promise since browser redirects
-    return new Promise(() => {});
-  }
-
   // Load GIS script
   await loadGoogleIdentityScript();
 
   const google = (window as any).google;
   if (!google?.accounts?.oauth2) {
-    // If GIS fails to load, use direct redirect flow
-    initiateGoogleRedirectOAuth(activeClientId);
-    return new Promise(() => {});
+    throw new Error('Google Identity Services SDK failed to load. Please check your internet connection.');
   }
 
   return new Promise((resolve, reject) => {
