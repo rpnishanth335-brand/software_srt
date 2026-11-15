@@ -1,23 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { ChronoForgeLogo } from '../components/ChronoForgeLogo';
-import { MoltenButton } from '../components/MoltenButton';
 import { 
   Sparkles, 
   Flame, 
   ShieldCheck, 
-  Calendar, 
   AlertCircle, 
   RefreshCw, 
   CheckCircle2, 
-  ArrowRight,
   Lock,
   Layers,
   Cpu
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const { signInWithGoogle, continueAsDemo, loading, error, clearError, isConfigured } = useAuth();
+  const { signInWithGoogle, continueAsDemo, loading, error, clearError } = useAuth();
   
   const [isSuccess, setIsSuccess] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
