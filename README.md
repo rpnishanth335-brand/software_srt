@@ -176,9 +176,6 @@ ChronoForge features official Google Sign-In powered by **Google Cloud Console O
      ```
    - Also add `VITE_GOOGLE_CLIENT_ID` in your **Vercel Project Settings > Environment Variables** for production.
 
-6. **In-App Dynamic Setup:**
-   - You can also click **Google Console OAuth Settings** directly on the ChronoForge login screen to paste your Client ID or copy the authorized origins with one click.
-
 
 ## 📄 License
 MIT License. Built for educational and administrative excellence.
