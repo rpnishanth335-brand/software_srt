@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { useTimetableStore } from '../store/useTimetableStore';
 import { ChronoForgeLogo } from '../components/ChronoForgeLogo';
-import { MoltenButton } from '../components/MoltenButton';
 import { 
   Building2, 
   Calendar, 
