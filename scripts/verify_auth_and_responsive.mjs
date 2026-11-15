@@ -40,21 +40,27 @@ async function verifyAuthAndResponsiveness() {
 
     await desktopPage.screenshot({ path: path.join(outDir, '01_login_desktop_hero.png') });
 
-    // 2. Click "Continue with Google" -> opens Google Cloud Console OAuth setup modal if unconfigured
-    console.log('  -> Testing Google Sign-In button click...');
-    await googleBtn.click();
+    // 2. Test Google Cloud Console OAuth guidance & Redirect URI modal
+    console.log('  -> Inspecting Google Cloud Console OAuth guidance and Authorized URIs...');
+    const settingsBtn = desktopPage.locator('button', { hasText: 'Google Console OAuth Settings' });
+    await settingsBtn.click();
     await desktopPage.waitForTimeout(400);
 
     // Verify Google Cloud Console OAuth guidance modal
-    const configModal = desktopPage.locator('text=Google Cloud Console OAuth');
-    if (await configModal.isVisible()) {
-      console.log('  ✓ Google Cloud Console OAuth guidance modal displayed');
-      await desktopPage.locator('button', { hasText: 'Cancel' }).click();
-      await desktopPage.waitForTimeout(300);
-    }
+    const configModal = desktopPage.locator('text=Google Cloud Console OAuth Setup');
+    await configModal.waitFor({ state: 'visible', timeout: 5000 });
+    console.log('  ✓ Google Cloud Console OAuth guidance modal displayed');
+    
+    // Verify Authorized Redirect URIs listed
+    const redirectLabel = desktopPage.locator('text=Authorized Redirect URIs (Callbacks):');
+    await redirectLabel.waitFor({ state: 'visible', timeout: 5000 });
+    console.log('  ✓ Authorized Redirect URIs (Callbacks) prominently surfaced');
 
-    // 3. Authenticate with Google OAuth
-    console.log('  -> Authenticating via Google OAuth...');
+    await desktopPage.locator('button', { hasText: 'Cancel' }).click();
+    await desktopPage.waitForTimeout(300);
+
+    // 3. Authenticate with Google OAuth in testing session
+    console.log('  -> Authenticating via Google OAuth session...');
     await desktopPage.evaluate(() => {
       (window).__chronoforge_mock_google_login({
         displayName: 'Google Administrator',
