@@ -139,3 +139,54 @@ body {
     filter: none !important;
   }
 }
+
+/* iOS Safari Input Auto-Zoom Prevention: Ensure inputs are at least 16px font-size on mobile */
+@media screen and (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Safe area padding utilities for notched devices */
+.safe-area-pt {
+  padding-top: max(0.625rem, env(safe-area-inset-top));
+}
+.safe-area-pb {
+  padding-bottom: max(0.625rem, env(safe-area-inset-bottom));
+}
+
+/* High-Contrast Crisp Monochrome Print Stylesheet */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  aside, nav, header, button, .no-print, [role="alert"] {
+    display: none !important;
+  }
+  .plasma-glass, .plasma-glass-daylight {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border: 1px solid #cccccc !important;
+    box-shadow: none !important;
+    color: #000000 !important;
+  }
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  th, td {
+    border: 1px solid #333333 !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+  }
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
+}
