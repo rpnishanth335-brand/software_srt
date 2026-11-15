@@ -133,8 +133,17 @@ async function verifyAuthAndResponsiveness() {
             displayName: 'Google Administrator',
             email: 'admin@google-oauth.edu'
           });
+          // Ensure onboarding marked complete for test user
+          localStorage.setItem('chronoforge_onboarded_google_oauth_sub_1092837465', 'true');
         });
         await p.waitForTimeout(400);
+
+        const onboardBtn = p.locator('button', { hasText: 'Save School & Enter ChronoForge ERP' });
+        if (await onboardBtn.isVisible()) {
+          await p.locator('input[placeholder*="International School"]').fill('Test Academy');
+          await onboardBtn.click();
+          await p.waitForTimeout(400);
+        }
       }
 
       // Check overflow on Dashboard
