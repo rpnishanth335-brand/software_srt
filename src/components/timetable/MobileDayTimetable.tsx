@@ -169,10 +169,10 @@ export const MobileDayTimetable: React.FC<MobileDayTimetableProps> = ({
                           )}
 
                           {/* Room */}
-                          {room && (
+                          {displayRoom && (
                             <span className="flex items-center gap-1 text-[11px] text-slate-400">
                               <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
-                              <span>{room.code || room.number}</span>
+                              <span>{displayRoom}</span>
                             </span>
                           )}
                         </div>

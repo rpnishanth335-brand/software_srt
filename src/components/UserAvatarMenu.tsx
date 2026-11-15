@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../auth/useAuth';
-import { LogOut, ShieldCheck, UserCheck, ChevronDown, Sparkles } from 'lucide-react';
+import { LogOut, ShieldCheck, ChevronDown, Sparkles } from 'lucide-react';
 import { MoltenButton } from './MoltenButton';
 
 interface UserAvatarMenuProps {
