@@ -40,10 +40,27 @@ async function verifyAuthAndResponsiveness() {
 
     await desktopPage.screenshot({ path: path.join(outDir, '01_login_desktop_hero.png') });
 
-    // 2. Click "Continue as Demo Guest"
-    console.log('  -> Signing in as Demo Administrator...');
-    const demoBtn = desktopPage.locator('button', { hasText: 'Continue as Demo Guest' });
-    await demoBtn.click();
+    // 2. Click "Continue with Google" -> opens Google Cloud Console OAuth setup modal if unconfigured
+    console.log('  -> Testing Google Sign-In button click...');
+    await googleBtn.click();
+    await desktopPage.waitForTimeout(400);
+
+    // Verify Google Cloud Console OAuth guidance modal
+    const configModal = desktopPage.locator('text=Google Cloud Console OAuth');
+    if (await configModal.isVisible()) {
+      console.log('  ✓ Google Cloud Console OAuth guidance modal displayed');
+      await desktopPage.locator('button', { hasText: 'Cancel' }).click();
+      await desktopPage.waitForTimeout(300);
+    }
+
+    // 3. Authenticate with Google OAuth
+    console.log('  -> Authenticating via Google OAuth...');
+    await desktopPage.evaluate(() => {
+      (window).__chronoforge_mock_google_login({
+        displayName: 'Google Administrator',
+        email: 'admin@google-oauth.edu'
+      });
+    });
     await desktopPage.waitForTimeout(600);
 
     // Verify successful redirect to Dashboard
@@ -53,9 +70,9 @@ async function verifyAuthAndResponsiveness() {
 
     await desktopPage.screenshot({ path: path.join(outDir, '02_dashboard_authenticated.png') });
 
-    // 3. User Avatar Menu & Sign Out Confirmation
+    // 4. User Avatar Menu & Sign Out Confirmation
     console.log('  -> Testing User Avatar Menu & Sign Out...');
-    const avatarBtn = desktopPage.locator('header').locator('button[title*="User Account"], button[title*="School Administrator"]').first();
+    const avatarBtn = desktopPage.locator('header').locator('button[title*="User Account"], button[title*="Google Administrator"], button[title*="School Admin"]').first();
     await avatarBtn.click();
     await desktopPage.waitForTimeout(300);
 
@@ -73,10 +90,6 @@ async function verifyAuthAndResponsiveness() {
     // Verify redirect back to Login Page
     await heroTitle.waitFor({ state: 'visible', timeout: 5000 });
     console.log('  ✓ Sign out successful: Returned to Login Page');
-
-    // Re-login for responsive audits
-    await desktopPage.locator('button', { hasText: 'Continue as Demo Guest' }).click();
-    await desktopPage.waitForTimeout(500);
 
     await desktopContext.close();
 
