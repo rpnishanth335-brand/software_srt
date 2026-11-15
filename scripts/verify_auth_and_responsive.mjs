@@ -122,11 +122,16 @@ async function verifyAuthAndResponsiveness() {
       await p.goto('http://localhost:5173/', { waitUntil: 'networkidle' });
       await p.waitForTimeout(300);
 
-      // Ensure logged in
-      const guestLogin = p.locator('button', { hasText: 'Continue as Demo Guest' });
-      if (await guestLogin.isVisible()) {
-        await guestLogin.click();
-        await p.waitForTimeout(300);
+      // Ensure logged in via Google OAuth
+      const isLogin = await p.locator('button', { hasText: 'Continue with Google' }).isVisible();
+      if (isLogin) {
+        await p.evaluate(() => {
+          (window).__chronoforge_mock_google_login({
+            displayName: 'Google Administrator',
+            email: 'admin@google-oauth.edu'
+          });
+        });
+        await p.waitForTimeout(400);
       }
 
       // Check overflow on Dashboard
