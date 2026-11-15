@@ -1,19 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SvgFilters } from './theme/SvgFilters';
 import { AppShell } from './layouts/AppShell';
 import { LoginPage } from './pages/LoginPage';
+import { NewUserOnboardingPage } from './pages/NewUserOnboardingPage';
 import { DesignShowcase } from './app/DesignShowcase';
 import { useHeatHaze } from './components/useHeatHaze';
 import { QualityMode } from './theme/tokens';
 import { EmberCanvas } from './components/EmberCanvas';
 import { AuthProvider, useAuth } from './auth/useAuth';
+import { useTimetableStore } from './store/useTimetableStore';
 import { ChronoForgeLogo } from './components/ChronoForgeLogo';
 
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
+  const { project } = useTimetableStore();
   const [currentView, setCurrentView] = useState<'app' | 'design'>('app');
   const [quality, setQuality] = useState<QualityMode>('high');
   const [isDaylight, setIsDaylight] = useState<boolean>(false);
+  const [isOnboarded, setIsOnboarded] = useState<boolean>(false);
+
+  // Sync user onboarding status
+  useEffect(() => {
+    if (user?.uid) {
+      const hasStoredFlag = localStorage.getItem(`chronoforge_onboarded_${user.uid}`) === 'true';
+      const hasStoreConfig = 
+        project.hasCompletedSetup === true || 
+        (project.school?.isConfigured === true && Boolean(project.school?.name) && project.school?.name !== 'ChronoForge High School');
+      setIsOnboarded(hasStoredFlag || Boolean(hasStoreConfig));
+    } else {
+      setIsOnboarded(false);
+    }
+  }, [user?.uid, project.hasCompletedSetup, project.school?.isConfigured, project.school?.name]);
 
   // Activate subtle thermal heat haze animation on SVG filter
   useHeatHaze({
@@ -37,6 +54,11 @@ const AppContent: React.FC = () => {
   // Protected Route: Unauthenticated users are directed to Login Page
   if (!user) {
     return <LoginPage />;
+  }
+
+  // New User Onboarding: Ask school name and basic details before entering full web page
+  if (!isOnboarded) {
+    return <NewUserOnboardingPage onComplete={() => setIsOnboarded(true)} />;
   }
 
   return (
