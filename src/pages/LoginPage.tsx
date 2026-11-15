@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { ChronoForgeLogo } from '../components/ChronoForgeLogo';
-import { GoogleConsoleConfigModal } from '../components/GoogleConsoleConfigModal';
 import { 
   Flame, 
   ShieldCheck, 
@@ -10,8 +9,7 @@ import {
   CheckCircle2, 
   Lock,
   Layers,
-  Cpu,
-  Key
+  Cpu
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -19,9 +17,7 @@ export const LoginPage: React.FC = () => {
     signInWithGoogle, 
     loading, 
     error, 
-    clearError, 
-    showConfigModal, 
-    setShowConfigModal 
+    clearError
   } = useAuth();
   
   const [isSuccess, setIsSuccess] = useState(false);
