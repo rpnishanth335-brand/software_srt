@@ -50,8 +50,9 @@ export interface TimetableState {
   addToast: (message: string, type?: ToastNotification['type']) => void;
   removeToast: (id: string) => void;
   
-  // Step 1: School Basics
+  // Step 1: School Basics & Onboarding
   updateSchool: (school: Partial<School>) => void;
+  completeOnboarding: (schoolDetails: Partial<School>) => void;
   setWorkingDays: (days: number[]) => void;
   setPeriodsForDay: (day: number, count: number) => void;
   
