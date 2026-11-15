@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Project, Slot } from '../../types';
-import { Lock, Unlock, AlertTriangle, Clock, MapPin, User, ChevronLeft, ChevronRight } from 'lucide-react';
-import { PlasmaGlass } from '../PlasmaGlass';
+import { Lock, Unlock, AlertTriangle, MapPin, User, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface MobileDayTimetableProps {
   project: Project;
