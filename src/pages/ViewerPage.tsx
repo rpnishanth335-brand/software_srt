@@ -65,6 +65,7 @@ export const ViewerPage: React.FC = () => {
   const [conflictAlert, setConflictAlert] = useState<string | null>(null);
   const [conflictSlotKeys, setConflictSlotKeys] = useState<Set<string>>(new Set());
   const [conflictReasonMap, setConflictReasonMap] = useState<Map<string, string>>(new Map());
+  const [mobileViewMode, setMobileViewMode] = useState<'day' | 'week'>('day');
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
