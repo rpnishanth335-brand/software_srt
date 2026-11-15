@@ -108,7 +108,8 @@ export const MobileDayTimetable: React.FC<MobileDayTimetableProps> = ({
           const subject = slot?.subjectId ? subjects.find((s) => s.id === slot.subjectId) : null;
           const teacher = slot?.teacherId ? teachers.find((t) => t.id === slot.teacherId) : null;
           const targetClass = slot?.classId ? classes.find((c) => c.id === slot.classId) : null;
-          const room = slot?.roomId ? rooms.find((r) => r.id === slot.roomId) : null;
+          const specialRoom = subject?.specialRoomId ? rooms.find((r) => r.id === subject.specialRoomId) : null;
+          const displayRoom = specialRoom?.code || targetClass?.room;
 
           const slotKey = slot ? `${slot.classId}_${slot.day}_${slot.period}` : '';
           const hasConflict = conflictSlotKeys.has(slotKey);
