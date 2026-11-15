@@ -9,6 +9,7 @@ export interface School {
   name: string;
   year: string;
   academicYear?: string;
+  isConfigured?: boolean;
   logo?: string; // base64 or URL
   logoUrl?: string;
   days: number[]; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
@@ -150,6 +151,7 @@ export interface RuleConfig {
 export interface Project {
   id: ID;
   userId?: string;
+  hasCompletedSetup?: boolean;
   school: School;
   classes: ClassRoom[];
   subjects: Subject[];
