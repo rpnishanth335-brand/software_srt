@@ -357,36 +357,102 @@ export const ViewerPage: React.FC = () => {
                 </button>
               </div>
             )}
+            {/* Mobile View Switcher (Day Focus vs Horizon Week) */}
+            <div className="flex sm:hidden items-center bg-white/5 border border-white/10 rounded-xl p-1 gap-1 text-[11px]">
+              <button
+                type="button"
+                onClick={() => setMobileViewMode('day')}
+                className={`px-2 py-1 rounded-lg font-semibold transition-all ${
+                  mobileViewMode === 'day' ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-400'
+                }`}
+              >
+                Day Focus
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileViewMode('week')}
+                className={`px-2 py-1 rounded-lg font-semibold transition-all ${
+                  mobileViewMode === 'week' ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-400'
+                }`}
+              >
+                Full Week
+              </button>
+            </div>
           </div>
 
-          {/* DnD Context & Grid Rendering */}
-          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            {activeTab === 'byClass' && effectiveClassId && (
-              <TimetableGridClass
+          {/* Mobile Single-Day Focused View (for phones when mobileViewMode is 'day') */}
+          <div className="block sm:hidden">
+            {mobileViewMode === 'day' && activeTab !== 'master' ? (
+              <MobileDayTimetable
                 project={project}
-                classId={effectiveClassId}
+                classId={activeTab === 'byClass' ? effectiveClassId : undefined}
+                teacherId={activeTab === 'byTeacher' ? effectiveTeacherId : undefined}
                 slots={currentSlots}
                 conflictSlotKeys={conflictSlotKeys}
                 conflictReasonMap={conflictReasonMap}
-                onToggleLock={toggleLockSlot}
+                onToggleLock={activeTab === 'byClass' ? toggleLockSlot : undefined}
               />
+            ) : (
+              <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+                <div className="overflow-x-auto">
+                  {activeTab === 'byClass' && effectiveClassId && (
+                    <TimetableGridClass
+                      project={project}
+                      classId={effectiveClassId}
+                      slots={currentSlots}
+                      conflictSlotKeys={conflictSlotKeys}
+                      conflictReasonMap={conflictReasonMap}
+                      onToggleLock={toggleLockSlot}
+                    />
+                  )}
+                  {activeTab === 'byTeacher' && effectiveTeacherId && (
+                    <TimetableGridTeacher
+                      project={project}
+                      teacherId={effectiveTeacherId}
+                      slots={currentSlots}
+                    />
+                  )}
+                  {activeTab === 'master' && (
+                    <TimetableGridMaster
+                      project={project}
+                      slots={currentSlots}
+                    />
+                  )}
+                </div>
+              </DndContext>
             )}
+          </div>
 
-            {activeTab === 'byTeacher' && effectiveTeacherId && (
-              <TimetableGridTeacher
-                project={project}
-                teacherId={effectiveTeacherId}
-                slots={currentSlots}
-              />
-            )}
+          {/* Desktop & Tablet Full Week Drag-and-Drop Matrix (>= 640px) */}
+          <div className="hidden sm:block">
+            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+              {activeTab === 'byClass' && effectiveClassId && (
+                <TimetableGridClass
+                  project={project}
+                  classId={effectiveClassId}
+                  slots={currentSlots}
+                  conflictSlotKeys={conflictSlotKeys}
+                  conflictReasonMap={conflictReasonMap}
+                  onToggleLock={toggleLockSlot}
+                />
+              )}
 
-            {activeTab === 'master' && (
-              <TimetableGridMaster
-                project={project}
-                slots={currentSlots}
-              />
-            )}
-          </DndContext>
+              {activeTab === 'byTeacher' && effectiveTeacherId && (
+                <TimetableGridTeacher
+                  project={project}
+                  teacherId={effectiveTeacherId}
+                  slots={currentSlots}
+                />
+              )}
+
+              {activeTab === 'master' && (
+                <TimetableGridMaster
+                  project={project}
+                  slots={currentSlots}
+                />
+              )}
+            </DndContext>
+          </div>
         </>
       )}
 
