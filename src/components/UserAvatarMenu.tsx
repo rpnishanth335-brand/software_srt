@@ -45,9 +45,6 @@ export const UserAvatarMenu: React.FC<UserAvatarMenuProps> = ({ compact = false 
           ) : (
             <span>{initials}</span>
           )}
-          {isDemoUser && (
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-amber-400 border border-black" title="Demo Session" />
-          )}
         </div>
 
         {!compact && (
@@ -56,7 +53,7 @@ export const UserAvatarMenu: React.FC<UserAvatarMenuProps> = ({ compact = false 
               {user.displayName || 'School Admin'}
             </span>
             <span className="text-[10px] text-slate-400 font-mono-code truncate max-w-[120px]">
-              {user.email || (isDemoUser ? 'Demo Mode' : 'Signed In')}
+              {user.email || 'Google Account'}
             </span>
           </div>
         )}
