@@ -20,7 +20,6 @@ import {
   Download, 
   Settings, 
   Sparkles, 
-  RotateCcw, 
   Bot, 
   Undo2, 
   Redo2, 
@@ -30,8 +29,7 @@ import {
   Sun, 
   Moon,
   Menu,
-  X,
-  ChevronRight
+  X
 } from 'lucide-react';
 import { AppRoute } from '../types';
 import { QualityMode } from '../theme/tokens';
