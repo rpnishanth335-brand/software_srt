@@ -28,9 +28,6 @@ export const GoogleConsoleConfigModal: React.FC<GoogleConsoleConfigModalProps> =
 
   if (!isOpen) return null;
 
-  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
-  const vercelOrigin = 'https://software-srt.vercel.app';
-
   const jsOrigins = [
     'https://software-srt.vercel.app',
     'http://localhost:5173'
