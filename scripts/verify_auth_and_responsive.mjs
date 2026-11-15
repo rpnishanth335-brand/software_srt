@@ -47,7 +47,7 @@ async function verifyAuthAndResponsiveness() {
     await desktopPage.waitForTimeout(600);
 
     // Verify successful redirect to Dashboard
-    const dashboardHeader = desktopPage.locator('text=Readiness:');
+    const dashboardHeader = desktopPage.locator('text=Readiness:').first();
     await dashboardHeader.waitFor({ state: 'visible', timeout: 5000 });
     console.log('  ✓ Authenticated session active: Redirected to Dashboard');
 
