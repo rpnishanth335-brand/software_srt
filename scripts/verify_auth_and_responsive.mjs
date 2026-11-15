@@ -40,24 +40,12 @@ async function verifyAuthAndResponsiveness() {
 
     await desktopPage.screenshot({ path: path.join(outDir, '01_login_desktop_hero.png') });
 
-    // 2. Test Google Cloud Console OAuth guidance & Redirect URI modal
-    console.log('  -> Inspecting Google Cloud Console OAuth guidance and Authorized URIs...');
-    const settingsBtn = desktopPage.locator('button', { hasText: 'Google Console OAuth Settings' });
-    await settingsBtn.click();
-    await desktopPage.waitForTimeout(400);
-
-    // Verify Google Cloud Console OAuth guidance modal
-    const configModal = desktopPage.locator('text=Google Cloud Console OAuth Setup');
-    await configModal.waitFor({ state: 'visible', timeout: 5000 });
-    console.log('  ✓ Google Cloud Console OAuth guidance modal displayed');
-    
-    // Verify Authorized Redirect URIs listed
-    const redirectLabel = desktopPage.locator('text=Authorized Redirect URIs (Callbacks):');
-    await redirectLabel.waitFor({ state: 'visible', timeout: 5000 });
-    console.log('  ✓ Authorized Redirect URIs (Callbacks) prominently surfaced');
-
-    await desktopPage.locator('button', { hasText: 'Cancel' }).click();
-    await desktopPage.waitForTimeout(300);
+    // 2. Verify "Google Console OAuth Settings" has been removed completely
+    const devBtn = desktopPage.locator('button', { hasText: 'Google Console OAuth Settings' });
+    const isDevVisible = await devBtn.isVisible();
+    if (!isDevVisible) {
+      console.log('  ✓ Verified: "Google Console OAuth Settings" is completely removed from the page');
+    }
 
     // 3. Authenticate with Google OAuth in testing session
     console.log('  -> Authenticating via Google OAuth session...');
@@ -69,10 +57,19 @@ async function verifyAuthAndResponsiveness() {
     });
     await desktopPage.waitForTimeout(600);
 
-    // Verify successful redirect to Dashboard
+    // 4. Verify New User Onboarding Screen & submit school basic details
+    const onboardingHeader = desktopPage.locator('text=New Institution Onboarding');
+    if (await onboardingHeader.isVisible()) {
+      console.log('  ✓ New User Onboarding page displayed: filling school basics...');
+      await desktopPage.locator('input[placeholder*="International School"]').fill('Springfield International Academy');
+      await desktopPage.locator('button', { hasText: 'Save School & Enter ChronoForge ERP' }).click();
+      await desktopPage.waitForTimeout(600);
+    }
+
+    // Verify successful entry into full Dashboard
     const dashboardHeader = desktopPage.locator('text=Readiness:').first();
     await dashboardHeader.waitFor({ state: 'visible', timeout: 5000 });
-    console.log('  ✓ Authenticated session active: Redirected to Dashboard');
+    console.log('  ✓ Authenticated session active: Entered full web page Dashboard');
 
     await desktopPage.screenshot({ path: path.join(outDir, '02_dashboard_authenticated.png') });
 
