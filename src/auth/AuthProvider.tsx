@@ -34,8 +34,6 @@ export interface AuthContextType {
   signOut: () => Promise<void>;
   clearError: () => void;
   isConfigured: boolean;
-  showConfigModal: boolean;
-  setShowConfigModal: (show: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
