@@ -260,8 +260,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signOut,
         clearError,
         isConfigured,
-        showConfigModal,
-        setShowConfigModal,
       }}
     >
       {children}
