@@ -64,7 +64,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [showConfigModal, setShowConfigModal] = useState<boolean>(false);
 
   const hasFirebase = isFirebaseConfigured();
   const hasGoogleConsole = isGoogleClientIdConfigured();
