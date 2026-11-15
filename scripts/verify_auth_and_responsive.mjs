@@ -55,7 +55,7 @@ async function verifyAuthAndResponsiveness() {
 
     // 3. User Avatar Menu & Sign Out Confirmation
     console.log('  -> Testing User Avatar Menu & Sign Out...');
-    const avatarBtn = desktopPage.locator('button[title*="User Account"], button[title*="School Administrator"]').first();
+    const avatarBtn = desktopPage.locator('header').locator('button[title*="User Account"], button[title*="School Administrator"]').first();
     await avatarBtn.click();
     await desktopPage.waitForTimeout(300);
 
