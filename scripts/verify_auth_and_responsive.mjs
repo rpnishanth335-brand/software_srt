@@ -132,8 +132,8 @@ async function verifyAuthAndResponsiveness() {
       await p.screenshot({ path: path.join(outDir, `vp_${vp.name}_dashboard.png`) });
 
       // Navigate to Timetable Viewer
-      if (vp.isMobile) {
-        // Use bottom nav on mobile!
+      if (vp.width < 768) {
+        // Use bottom nav on mobile / screens under 768px!
         await p.locator('nav button', { hasText: 'Viewer' }).click();
       } else {
         await p.locator('button[data-nav="viewer"]').first().click();
