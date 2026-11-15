@@ -11,6 +11,7 @@ import { TimetableGridClass } from '../components/timetable/TimetableGridClass';
 import { TimetableGridTeacher } from '../components/timetable/TimetableGridTeacher';
 import { TimetableGridMaster } from '../components/timetable/TimetableGridMaster';
 import { VersionHistoryModal } from '../components/timetable/VersionHistoryModal';
+import { MobileDayTimetable } from '../components/timetable/MobileDayTimetable';
 import { PlasmaGlass } from '../components/PlasmaGlass';
 import { MoltenButton } from '../components/MoltenButton';
 import { 
