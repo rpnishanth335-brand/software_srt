@@ -27,11 +27,21 @@ const STORAGE_KEY_USER = 'chronoforge_google_auth_user';
 const STORAGE_KEY_CLIENT_ID = 'chronoforge_google_client_id';
 
 /**
- * Retrieves the Google Client ID configured either via .env (VITE_GOOGLE_CLIENT_ID)
- * or dynamically stored in localStorage.
+ * Retrieves the Google Client ID configured either via environment variable
+ * (GOOGLE_CLIENT_ID or VITE_GOOGLE_CLIENT_ID) or dynamically stored in localStorage.
  */
 export const getGoogleClientId = (): string => {
-  const envId = (import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim();
+  // Check build-time injected define
+  if (typeof __GOOGLE_CLIENT_ID__ !== 'undefined' && __GOOGLE_CLIENT_ID__) {
+    return __GOOGLE_CLIENT_ID__.trim();
+  }
+
+  // Check import.meta.env (supports both GOOGLE_CLIENT_ID and VITE_GOOGLE_CLIENT_ID)
+  const envId = (
+    import.meta.env.GOOGLE_CLIENT_ID ||
+    import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+    ''
+  ).trim();
   if (envId) return envId;
 
   if (typeof window !== 'undefined') {
@@ -65,9 +75,21 @@ export const isGoogleClientIdConfigured = (): boolean => {
 };
 
 /**
- * Computes standard Authorized Redirect URI (callback URL) for current origin.
+ * Computes standard Authorized Redirect URI (callback URL).
+ * Checks GOOGLE_REDIRECT_URI environment variable or defaults to current origin /auth/callback.
  */
 export const getGoogleRedirectUri = (): string => {
+  if (typeof __GOOGLE_REDIRECT_URI__ !== 'undefined' && __GOOGLE_REDIRECT_URI__) {
+    return __GOOGLE_REDIRECT_URI__.trim();
+  }
+
+  const envUri = (
+    import.meta.env.GOOGLE_REDIRECT_URI ||
+    import.meta.env.VITE_GOOGLE_REDIRECT_URI ||
+    ''
+  ).trim();
+  if (envUri) return envUri;
+
   if (typeof window === 'undefined') return 'https://software-srt.vercel.app/auth/callback';
   const origin = window.location.origin;
   return `${origin}/auth/callback`;
