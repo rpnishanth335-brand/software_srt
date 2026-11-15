@@ -140,43 +140,45 @@ npm test
 
 ---
 
-## 🔐 Google Authentication & Firebase Setup
+## 🔐 Google Cloud Console OAuth 2.0 Setup
 
-ChronoForge features seamless Google Authentication via Firebase Auth with automated fallbacks (`signInWithPopup` on desktop and `signInWithRedirect` on mobile/in-app webviews/blocked popups), alongside offline demo guest login.
+ChronoForge features official Google Sign-In powered by **Google Cloud Console OAuth 2.0 (Google Identity Services)**. Administrators sign in directly with their verified Google Account, and school schedules in IndexedDB are partitioned securely per Google User ID.
 
-### Setup Steps
+### Setup Instructions for Google Cloud Console
 
-1. **Create a Firebase Project:**
-   - Visit the [Firebase Console](https://console.firebase.google.com/).
-   - Click **Add project** and provide a project name (e.g. `chronoforge-app`).
-   - Complete the wizard (Google Analytics is optional).
+1. **Open Google Cloud Console:**
+   - Go to [Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials).
+   - Select or create your Google Cloud Project.
 
-2. **Enable Google Sign-In Provider:**
-   - In the Firebase Console left navigation, navigate to **Build** > **Authentication**.
-   - Under the **Sign-in method** tab, click **Add new provider** and select **Google**.
-   - Toggle **Enable**, select your project support email, and click **Save**.
+2. **Configure OAuth Consent Screen (First Time Only):**
+   - In the left menu, select **OAuth consent screen**.
+   - User Type: Choose **External** (or Internal if using Google Workspace).
+   - App Name: `ChronoForge`
+   - User support email & Developer contact info: Your email.
+   - Scopes: Default scopes (`openid`, `email`, `profile`).
 
-3. **Configure Authorized Domains:**
-   - In **Authentication** > **Settings** > **Authorized domains**, confirm or add:
-     - `localhost` (default for local development)
-     - `127.0.0.1`
-     - Your deployed Vercel domain (e.g., `software-srt.vercel.app` or any custom domain).
+3. **Create OAuth 2.0 Client ID:**
+   - Go to **Credentials** > Click **+ CREATE CREDENTIALS** > Select **OAuth client ID**.
+   - Application type: **Web application**.
+   - Name: `ChronoForge Web Client`.
 
-4. **Copy Configuration to `.env`:**
-   - Go to Project Settings (gear icon) > **General**, scroll to **Your apps**, and select the Web (`</>`) icon.
-   - Copy the Firebase configuration parameters into your local `.env` file (modeled after `.env.example`):
+4. **Add Authorized JavaScript Origins:**
+   - Under **Authorized JavaScript origins**, click **+ ADD URI** and add:
+     - `http://localhost:5173` (Local development)
+     - `https://software-srt.vercel.app` (Vercel production deployment)
+   - *(Note: Do NOT add a trailing slash)*.
+
+5. **Copy Client ID to `.env`:**
+   - Click **Create** to obtain your Client ID (format: `xxxxxxxx.apps.googleusercontent.com`).
+   - Add it to your local `.env` file:
      ```env
-     VITE_FIREBASE_API_KEY=your_api_key_here
-     VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-     VITE_FIREBASE_PROJECT_ID=your_project_id
-     VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-     VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-     VITE_FIREBASE_APP_ID=your_app_id
-     VITE_ENABLE_DEMO_LOGIN=true
+     VITE_GOOGLE_CLIENT_ID=your_client_id_here.apps.googleusercontent.com
      ```
+   - Also add `VITE_GOOGLE_CLIENT_ID` in your **Vercel Project Settings > Environment Variables** for production.
 
-5. **Offline & Demo Mode:**
-   - Setting `VITE_ENABLE_DEMO_LOGIN=true` provides an instant fallback allowing administrators, evaluators, and automated test runners to experience all features offline without Firebase credentials.
+6. **In-App Dynamic Setup:**
+   - You can also click **Google Console OAuth Settings** directly on the ChronoForge login screen to paste your Client ID or copy the authorized origins with one click.
+
 
 ## 📄 License
 MIT License. Built for educational and administrative excellence.
