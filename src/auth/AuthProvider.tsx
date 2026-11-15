@@ -156,7 +156,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const loggedUser = await signInWithGoogleConsoleOAuth(explicitClientId);
         setUser(loggedUser);
         setError(null);
-        setShowConfigModal(false);
         return;
       } catch (err: any) {
         console.error('[GoogleOAuth] Sign-in failed:', err);
