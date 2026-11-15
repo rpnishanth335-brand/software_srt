@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { LogOut, ShieldCheck, ChevronDown } from 'lucide-react';
+import { MoltenButton } from './MoltenButton';
 
 interface UserAvatarMenuProps {
   compact?: boolean;
