@@ -14,7 +14,6 @@ import {
   signOutGoogleConsole, 
   isGoogleClientIdConfigured,
   handleGoogleOAuthCallback,
-  initiateGoogleRedirectOAuth,
   GoogleAuthUser 
 } from './googleOAuth';
 
