@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-obsidian-bg: #07060a;
+  --color-obsidian-surface: #0b0a10;
+  --color-ember-primary: #ff6b00;
+  --color-ember-gold: #ffb703;
+  --color-ember-plasma: #ff3d00;
+  --font-display: 'Cinzel', serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-obsidian-bg);
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 107, 0, 0.15), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(157, 78, 221, 0.1), transparent 60%),
+    radial-gradient(circle 400px at 10% 40%, rgba(255, 61, 0, 0.08), transparent 70%);
+  background-attachment: fixed;
+  color: #f1f5f9;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Typography */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono-code {
+  font-family: var(--font-mono);
+}
+
+/* Liquid Glass Specular & Refraction Utilities */
+.plasma-glass {
+  background: rgba(18, 16, 28, 0.65);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    inset 1px 1px 1px 0px rgba(255, 255, 255, 0.22),
+    inset -1px -1px 2px 0px rgba(0, 0, 0, 0.7),
+    0 12px 40px -10px rgba(0, 0, 0, 0.8);
+  position: relative;
+}
+
+/* Daylight Glass variant for light mode */
+.plasma-glass-daylight {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 
+    inset 1px 1px 2px rgba(255, 255, 255, 0.9),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.05),
+    0 12px 35px -8px rgba(0, 0, 0, 0.12);
+  color: #0f172a;
+}
+
+/* Animated Ember Rim Lighting using conic-gradient and noise */
+@keyframes emberRimRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.ember-rim-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.ember-rim-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(255, 107, 0, 0.6) 60deg,
+    rgba(255, 183, 3, 0.9) 110deg,
+    rgba(255, 61, 0, 0.8) 160deg,
+    transparent 220deg,
+    rgba(255, 140, 0, 0.4) 280deg,
+    transparent 360deg
+  );
+  border-radius: inherit;
+  z-index: 0;
+  animation: emberRimRotate 8s linear infinite;
+  opacity: 0.7;
+  filter: blur(3px);
+  pointer-events: none;
+}
+
+.ember-rim-glow::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: inherit;
+  border-radius: inherit;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Molten Button Hover Physics */
+.molten-gradient {
+  background: linear-gradient(135deg, #ff6b00 0%, #ff3d00 50%, #d00000 100%);
+}
+
+.molten-gradient:hover {
+  background: linear-gradient(135deg, #ff8533 0%, #ff521a 50%, #e60000 100%);
+  box-shadow: 0 0 25px rgba(255, 107, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+/* SVG Filter Class Application */
+.filter-refraction {
+  filter: url(#plasma-refraction);
+}
+
+.filter-goo {
+  filter: url(#molten-goo);
+}
+
+/* Reduced motion overrides */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .filter-refraction {
+    filter: none !important;
+  }
+}
