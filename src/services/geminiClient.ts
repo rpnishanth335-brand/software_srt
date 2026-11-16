@@ -24,7 +24,7 @@ export interface TestConnectionResult {
  */
 export async function testGeminiConnection(
   apiKey: string,
-  model: string = 'gemini-2.0-flash',
+  model: string = 'gemini-flash-latest',
   useProxy: boolean = false
 ): Promise<TestConnectionResult> {
   const cleanKey = apiKey.trim();
@@ -35,10 +35,13 @@ export async function testGeminiConnection(
     };
   }
 
-  // Normalize deprecated or unavailable models to active gemini-2.0-flash
-  const activeModel = (!model || model.includes('gemini-2.5') || model.includes('gemini-3.8') || model === 'gemini-3.1-pro-preview')
-    ? 'gemini-2.0-flash'
-    : model;
+  // Normalize deprecated or unavailable models to active models
+  let activeModel = model;
+  if (!activeModel || activeModel.includes('gemini-2.0') || activeModel.includes('gemini-2.5-flash')) {
+    activeModel = 'gemini-flash-latest';
+  } else if (activeModel.includes('gemini-2.5-pro')) {
+    activeModel = 'gemini-3.1-pro-preview';
+  }
 
   try {
     let url: string;
@@ -106,7 +109,7 @@ export async function testGeminiConnection(
     if (res.status === 404) {
       return {
         status: 'error',
-        message: detailedMessage || `Model '${model}' not found. Please choose an active model like gemini-2.0-flash or gemini-flash-latest.`,
+        message: detailedMessage || `Model '${activeModel}' not found. Please choose an active model like gemini-flash-latest or gemini-3.8-flash.`,
       };
     }
 
@@ -142,10 +145,13 @@ export async function callGeminiStructured<T>(
     throw new Error('Missing Gemini API key. Please configure your key in Settings > AI Assistant.');
   }
 
-  const requestedModel = options.model || 'gemini-2.0-flash';
-  const model = (!requestedModel || requestedModel.includes('gemini-2.5') || requestedModel.includes('gemini-3.8') || requestedModel === 'gemini-3.1-pro-preview')
-    ? 'gemini-2.0-flash'
-    : requestedModel;
+  const requestedModel = options.model || 'gemini-flash-latest';
+  let model = requestedModel;
+  if (!model || model.includes('gemini-2.0') || model.includes('gemini-2.5-flash')) {
+    model = 'gemini-flash-latest';
+  } else if (model.includes('gemini-2.5-pro')) {
+    model = 'gemini-3.1-pro-preview';
+  }
   const temperature = options.temperature !== undefined ? options.temperature : 0.1;
   const useProxy = options.useProxy || false;
 

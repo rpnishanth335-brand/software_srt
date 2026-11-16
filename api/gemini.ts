@@ -5,12 +5,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }
 
-  const { action, apiKey, model: requestedModel = 'gemini-2.0-flash', temperature = 0.1, prompt, systemInstruction, responseSchema } = req.body || {};
+  const { action, apiKey, model: requestedModel = 'gemini-flash-latest', temperature = 0.1, prompt, systemInstruction, responseSchema } = req.body || {};
 
-  // Normalize legacy/deprecated models to active gemini-2.0-flash
-  const model = (!requestedModel || requestedModel.includes('gemini-2.5') || requestedModel.includes('gemini-3.8') || requestedModel === 'gemini-3.1-pro-preview')
-    ? 'gemini-2.0-flash'
-    : requestedModel;
+  // Normalize legacy/deprecated models to active Gemini models
+  let model = requestedModel;
+  if (!model || model.includes('gemini-2.0') || model.includes('gemini-2.5-flash')) {
+    model = 'gemini-flash-latest';
+  } else if (model.includes('gemini-2.5-pro')) {
+    model = 'gemini-3.1-pro-preview';
+  }
 
   const resolvedApiKey = (apiKey || process.env.GEMINI_API_KEY || '').trim();
 

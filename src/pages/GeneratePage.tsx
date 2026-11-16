@@ -198,9 +198,12 @@ export const GeneratePage: React.FC = () => {
     const uid = user?.uid || 'default_user';
     const apiKey = (await getAiKey(uid)) || '';
     const storedModel = localStorage.getItem('chronoforge_ai_model');
-    const model = (!storedModel || storedModel.includes('gemini-2.5') || storedModel.includes('gemini-3.8') || storedModel === 'gemini-3.1-pro-preview')
-      ? 'gemini-2.0-flash'
-      : storedModel;
+    let model = storedModel || 'gemini-flash-latest';
+    if (!model || model.includes('gemini-2.0') || model.includes('gemini-2.5-flash')) {
+      model = 'gemini-flash-latest';
+    } else if (model.includes('gemini-2.5-pro')) {
+      model = 'gemini-3.1-pro-preview';
+    }
     const temperature = parseFloat(localStorage.getItem('chronoforge_ai_temp') || '0.1');
     const useProxy = localStorage.getItem('chronoforge_use_proxy') === 'true';
 
@@ -844,7 +847,7 @@ export const GeneratePage: React.FC = () => {
           onClose={() => setShowConsentModal(false)}
           onProceed={handleRunAiPipeline}
           payload={consentPayload}
-          model={localStorage.getItem('chronoforge_ai_model') || 'gemini-2.0-flash'}
+          model={localStorage.getItem('chronoforge_ai_model') || 'gemini-flash-latest'}
         />
       )}
     </div>
