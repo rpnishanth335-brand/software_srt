@@ -51,10 +51,9 @@ export function evaluateTimetableState(
   const teacherMap = new Map(teachers.map((t) => [t.id, t]));
   const subjectMap = new Map(subjects.map((s) => [s.id, s]));
 
-  // 1. Check Teacher Clashes & Room Clashes across (day, period)
+  // 1. Check Teacher Clashes across (day, period)
   // key: `${day}:${period}`, value: list of teachers
   const teacherTimeIndex = new Map<string, ID[]>();
-  const roomTimeIndex = new Map<string, ID[]>();
   // key: `${teacherId}:${day}`, value: sorted list of periods
   const teacherDayPeriods = new Map<string, number[]>();
   // key: `${classId}:${subjectId}:${day}`, value: count of periods
@@ -82,16 +81,6 @@ export function evaluateTimetableState(
       const periodsOnDay = teacherDayPeriods.get(teacherDayKey) || [];
       periodsOnDay.push(period);
       teacherDayPeriods.set(teacherDayKey, periodsOnDay);
-    }
-
-    // B. Special Room clash check
-    if (hardRules.specialRoomClash && lesson.specialRoomId) {
-      const existingRooms = roomTimeIndex.get(timeKey) || [];
-      if (existingRooms.includes(lesson.specialRoomId)) {
-        hardBreakdown.specialRoomClash++;
-      }
-      existingRooms.push(lesson.specialRoomId);
-      roomTimeIndex.set(timeKey, existingRooms);
     }
 
     // C. Teacher blocked slots

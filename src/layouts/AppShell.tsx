@@ -12,9 +12,6 @@ import {
   GraduationCap, 
   BookOpen, 
   Users, 
-  DoorOpen, 
-  Grid3X3, 
-  Sliders, 
   ShieldCheck, 
   CalendarDays, 
   Download, 
@@ -77,21 +74,22 @@ export const AppShell: React.FC<AppShellProps> = ({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
 
-  const { school, classes, subjects, teachers, rooms, assignments, timetables } = project;
+  const { school, classes, subjects, teachers, assignments, timetables } = project;
   const selectedClasses = classes.filter(c => c.selected);
 
   // Calculate Setup Completeness
   const hasSchool = Boolean(school.name.trim() && (school.days?.length > 0 || (school.workingDays && school.workingDays.length > 0)));
-  const hasClasses = classes.length > 0 && selectedClasses.length > 0;
   const hasSubjects = subjects.length > 0;
   const hasStaff = teachers.length > 0;
-  const hasRooms = rooms.length > 0;
-  const hasAssignments = assignments.some(a => a.periodsPerWeek > 0);
+  const hasClasses = classes.length > 0 && selectedClasses.length > 0;
+  const hasCompleteClass = classes.some(c => c.selected && (c.status === 'complete' || assignments.some(a => a.classId === c.id && a.periodsPerWeek > 0)));
+  const readyToGenerate = hasSubjects && hasStaff && hasClasses && hasCompleteClass;
 
-  const completedMilestones = [hasSchool, hasClasses, hasSubjects, hasStaff, hasRooms, hasAssignments].filter(Boolean).length;
-  const completenessPct = Math.round((completedMilestones / 6) * 100);
+  const completedSteps = [hasSubjects, hasStaff, hasClasses, readyToGenerate].filter(Boolean).length;
+  const completenessPct = Math.round((completedSteps / 4) * 100);
 
-  // Nav Items Structure
+  // Nav Items Structure - Strictly Enforcing Required Order:
+  // 1. Subjects -> 2. Staff -> 3. Classes -> 4. Generate
   const navItems: Array<{
     group: string;
     items: Array<{
@@ -109,22 +107,49 @@ export const AppShell: React.FC<AppShellProps> = ({
       ],
     },
     {
-      group: 'Setup & Catalog',
+      group: 'Setup Flow (1 → 2 → 3)',
       items: [
-        { route: 'school', label: 'School Settings', icon: <Building2 className="w-4 h-4" />, badge: hasSchool ? '✓' : '!', badgeColor: hasSchool ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300' },
-        { route: 'classes', label: 'Classes & Cohorts', icon: <GraduationCap className="w-4 h-4" />, badge: classes.length, badgeColor: 'bg-white/10 text-slate-300' },
-        { route: 'subjects', label: 'Subjects Catalog', icon: <BookOpen className="w-4 h-4" />, badge: subjects.length, badgeColor: 'bg-white/10 text-slate-300' },
-        { route: 'staff', label: 'Faculty & Staff', icon: <Users className="w-4 h-4" />, badge: teachers.length, badgeColor: 'bg-white/10 text-slate-300' },
-        { route: 'rooms', label: 'Rooms & Labs', icon: <DoorOpen className="w-4 h-4" />, badge: rooms.length, badgeColor: 'bg-white/10 text-slate-300' },
-        { route: 'assignments', label: 'Curriculum Matrix', icon: <Grid3X3 className="w-4 h-4" /> },
-        { route: 'rules', label: 'Rules & Sliders', icon: <Sliders className="w-4 h-4" /> },
+        { 
+          route: 'subjects', 
+          label: '1. Subjects Catalog', 
+          icon: <BookOpen className="w-4 h-4" />, 
+          badge: subjects.length, 
+          badgeColor: hasSubjects ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-slate-400' 
+        },
+        { 
+          route: 'staff', 
+          label: '2. Faculty & Staff', 
+          icon: <Users className="w-4 h-4" />, 
+          badge: teachers.length, 
+          badgeColor: hasStaff ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-slate-400' 
+        },
+        { 
+          route: 'classes', 
+          label: '3. Classes & Wizard', 
+          icon: <GraduationCap className="w-4 h-4" />, 
+          badge: classes.length, 
+          badgeColor: hasClasses ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-slate-400' 
+        },
+        { 
+          route: 'school', 
+          label: 'School Timings', 
+          icon: <Building2 className="w-4 h-4" />, 
+          badge: hasSchool ? '✓' : '!', 
+          badgeColor: hasSchool ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300' 
+        },
       ],
     },
     {
       group: 'Timetable Operations',
       items: [
-        { route: 'feasibility', label: 'Feasibility Check', icon: <ShieldCheck className="w-4 h-4" /> },
-        { route: 'generate', label: 'AI Generator', icon: <Flame className="w-4 h-4 text-amber-400" /> },
+        { 
+          route: 'generate', 
+          label: '4. AI Generator', 
+          icon: <Flame className="w-4 h-4 text-amber-400" />,
+          badge: readyToGenerate ? 'Ready' : 'Setup',
+          badgeColor: readyToGenerate ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+        },
+        { route: 'feasibility', label: 'Feasibility & Pre-Flight', icon: <ShieldCheck className="w-4 h-4" /> },
         { route: 'viewer', label: 'Timetable Viewer', icon: <CalendarDays className="w-4 h-4" />, badge: timetables.length > 0 ? `${timetables.length} ver` : undefined, badgeColor: 'bg-amber-500/20 text-amber-300' },
       ],
     },
@@ -132,7 +157,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       group: 'Publish & Options',
       items: [
         { route: 'export', label: 'Export Center', icon: <Download className="w-4 h-4" /> },
-        { route: 'settings', label: 'Settings & Data', icon: <Settings className="w-4 h-4" /> },
+        { route: 'settings', label: 'Settings & AI Key', icon: <Settings className="w-4 h-4" /> },
       ],
     },
   ];
@@ -222,17 +247,42 @@ export const AppShell: React.FC<AppShellProps> = ({
             </div>
           </div>
 
-          {/* Setup Completeness Mini Progress (Desktop Only) */}
-          <div className="hidden lg:block p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+          {/* Setup Completeness Stepper Checklist (Desktop Only) */}
+          <div className="hidden lg:block p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-2">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="text-slate-400 font-medium">Readiness:</span>
+              <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Guided Setup</span>
               <span className="font-mono-code font-bold text-amber-300">{completenessPct}%</span>
             </div>
-            <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-amber-500 to-amber-300 transition-all duration-500"
-                style={{ width: `${completenessPct}%` }}
-              />
+            
+            <div className="grid grid-cols-4 gap-1 text-center text-[10px] font-mono-code font-bold">
+              <button 
+                onClick={() => handleNavClick('subjects')}
+                className={`py-1 rounded-md transition-all ${hasSubjects ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                title="1. Subjects"
+              >
+                1. Sub ({subjects.length})
+              </button>
+              <button 
+                onClick={() => handleNavClick('staff')}
+                className={`py-1 rounded-md transition-all ${hasStaff ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                title="2. Staff"
+              >
+                2. Stf ({teachers.length})
+              </button>
+              <button 
+                onClick={() => handleNavClick('classes')}
+                className={`py-1 rounded-md transition-all ${hasClasses ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                title="3. Classes"
+              >
+                3. Cls ({classes.length})
+              </button>
+              <button 
+                onClick={() => handleNavClick('generate')}
+                className={`py-1 rounded-md transition-all ${readyToGenerate ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse' : 'bg-white/5 text-slate-500 hover:bg-white/10'}`}
+                title="4. Generator"
+              >
+                4. {readyToGenerate ? 'Ready' : 'Gen'}
+              </button>
             </div>
           </div>
         </div>

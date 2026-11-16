@@ -20,13 +20,96 @@ import {
   Sparkles,
   Bot,
   Cpu,
-  BarChart3
+  BarChart3,
+  ShieldCheck,
+  AlertTriangle,
+  XCircle,
+  Wrench
 } from 'lucide-react';
-import { TimetableVersion } from '../types';
+import { TimetableVersion, AppRoute } from '../types';
 
 export const GeneratePage: React.FC = () => {
   const { project, setCurrentRoute, setTimetableVersion, addToast, setActiveTab } = useTimetableStore();
-  const { classes } = project;
+  const { school, classes, subjects, teachers, assignments } = project;
+  const totalSlotsPerWeek = (school.days || [1, 2, 3, 4, 5]).reduce(
+    (sum, d) => sum + (school.periodsByDay[d] || 8),
+    0
+  );
+  const selectedClasses = classes.filter((c) => c.selected);
+
+  // Pre-Flight Validation Checks
+  const preflightIssues: Array<{
+    id: string;
+    level: 'error' | 'warning';
+    title: string;
+    description: string;
+    actionLabel: string;
+    targetRoute: AppRoute;
+  }> = [];
+
+  if (subjects.length === 0) {
+    preflightIssues.push({
+      id: 'no-subjects',
+      level: 'error',
+      title: 'Step 1 Incomplete: No Subjects Added',
+      description: 'You need curriculum subjects before generating.',
+      actionLabel: '1. Add Subjects',
+      targetRoute: 'subjects',
+    });
+  }
+
+  if (teachers.length === 0) {
+    preflightIssues.push({
+      id: 'no-teachers',
+      level: 'error',
+      title: 'Step 2 Incomplete: No Staff Added',
+      description: 'You need faculty members to teach subjects.',
+      actionLabel: '2. Add Faculty',
+      targetRoute: 'staff',
+    });
+  }
+
+  if (selectedClasses.length === 0) {
+    preflightIssues.push({
+      id: 'no-classes',
+      level: 'error',
+      title: 'Step 3 Incomplete: No Classes Selected',
+      description: 'Select at least one class cohort to generate.',
+      actionLabel: '3. Setup Classes',
+      targetRoute: 'classes',
+    });
+  } else {
+    for (const c of selectedClasses) {
+      const classAssignments = assignments.filter((a) => a.classId === c.id);
+      const assignedPeriods = classAssignments.reduce((sum, a) => sum + a.periodsPerWeek, 0);
+      const hasUnassignedTeacher = classAssignments.some((a) => a.periodsPerWeek > 0 && !a.teacherId);
+
+      if (c.status === 'overfilled' || assignedPeriods > totalSlotsPerWeek) {
+        preflightIssues.push({
+          id: `class-over-${c.id}`,
+          level: 'error',
+          title: `Class ${c.name}${c.section} Over Capacity (${assignedPeriods}/${totalSlotsPerWeek})`,
+          description: `Assigned periods exceed total weekly slots (${totalSlotsPerWeek}).`,
+          actionLabel: `Fix Class ${c.name}${c.section}`,
+          targetRoute: 'classes',
+        });
+      } else if (c.status === 'incomplete' || assignedPeriods < totalSlotsPerWeek || hasUnassignedTeacher) {
+        preflightIssues.push({
+          id: `class-inc-${c.id}`,
+          level: 'warning',
+          title: `Class ${c.name}${c.section} Incomplete (${assignedPeriods}/${totalSlotsPerWeek})`,
+          description: hasUnassignedTeacher
+            ? 'One or more subjects do not have an assigned teacher.'
+            : `Class has ${totalSlotsPerWeek - assignedPeriods} unscheduled period(s).`,
+          actionLabel: `Edit Class ${c.name}${c.section}`,
+          targetRoute: 'classes',
+        });
+      }
+    }
+  }
+
+  const blockingPreflightCount = preflightIssues.filter((i) => i.level === 'error').length;
+
   const { user } = useAuth();
 
   // Mode & Configuration
@@ -75,6 +158,11 @@ export const GeneratePage: React.FC = () => {
 
   // Triggered when user clicks "Generate"
   const handleInitiateGeneration = async () => {
+    if (blockingPreflightCount > 0) {
+      addToast(`Please resolve the ${blockingPreflightCount} blocking pre-flight item(s) before generating.`, 'warning');
+      return;
+    }
+
     if (generationMode === 'ai_hybrid') {
       const uid = user?.uid || 'default_user';
       const key = await getAiKey(uid);
@@ -328,6 +416,88 @@ export const GeneratePage: React.FC = () => {
         </button>
       </div>
 
+      {/* Pre-Flight Health & Readiness Checker */}
+      <PlasmaGlass glow={blockingPreflightCount === 0} className={`p-4 sm:p-5 border ${blockingPreflightCount > 0 ? 'border-red-500/40 bg-red-950/15' : 'border-emerald-500/40 bg-emerald-950/15'} space-y-3`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-white/10">
+          <div className="flex items-center gap-2.5">
+            {blockingPreflightCount > 0 ? (
+              <XCircle className="w-5 h-5 text-red-400 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            )}
+            <div>
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                Pre-Flight Generation Readiness
+                {blockingPreflightCount > 0 ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-red-500/20 text-red-300 border border-red-500/30">
+                    {blockingPreflightCount} Blocking Issue{blockingPreflightCount > 1 ? 's' : ''}
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    All Checks Passed
+                  </span>
+                )}
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                {blockingPreflightCount > 0
+                  ? 'Resolve blocking setup items below before generating your master timetable.'
+                  : `${subjects.length} Subjects, ${teachers.length} Faculty, and ${selectedClasses.length} Classes verified for 0-conflict generation.`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <MoltenButton
+              size="sm"
+              variant="glass"
+              onClick={() => setCurrentRoute('feasibility')}
+              leftIcon={<ShieldCheck className="w-3.5 h-3.5 text-amber-400" />}
+              className="text-xs"
+            >
+              Audit Math
+            </MoltenButton>
+          </div>
+        </div>
+
+        {/* Preflight Issue List */}
+        {preflightIssues.length > 0 && (
+          <div className="space-y-2 pt-1">
+            {preflightIssues.map((issue) => (
+              <div
+                key={issue.id}
+                className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+                  issue.level === 'error'
+                    ? 'bg-red-500/10 border-red-500/30 text-red-200'
+                    : 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+                }`}
+              >
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${issue.level === 'error' ? 'text-red-400' : 'text-amber-400'}`} />
+                  <div>
+                    <div className="font-bold text-white flex items-center gap-2">
+                      {issue.title}
+                    </div>
+                    <div className="text-[11px] text-slate-300 mt-0.5">
+                      {issue.description}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentRoute(issue.targetRoute)}
+                  className="shrink-0 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/15 transition-colors self-start sm:self-auto flex items-center gap-1.5"
+                >
+                  <Wrench className="w-3 h-3 text-amber-300" />
+                  <span>{issue.actionLabel}</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </PlasmaGlass>
+
       {/* Solver Configuration Panel */}
       <PlasmaGlass glow={!isSolving} className="p-6 border-white/10 space-y-6">
         <div className="text-sm font-bold text-amber-200 flex items-center justify-between">
@@ -445,12 +615,23 @@ export const GeneratePage: React.FC = () => {
             ) : (
               <MoltenButton
                 size="lg"
-                variant="molten"
+                variant={blockingPreflightCount > 0 ? 'glass' : 'molten'}
+                disabled={blockingPreflightCount > 0}
                 onClick={handleInitiateGeneration}
                 leftIcon={generationMode === 'ai_hybrid' ? <Sparkles className="w-5 h-5" /> : <Flame className="w-5 h-5" />}
-                className={generationMode === 'ai_hybrid' ? 'bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-500 hover:to-amber-500' : ''}
+                className={
+                  blockingPreflightCount > 0
+                    ? 'opacity-60 cursor-not-allowed border-red-500/30 text-slate-400'
+                    : generationMode === 'ai_hybrid'
+                    ? 'bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-500 hover:to-amber-500'
+                    : ''
+                }
               >
-                {generationMode === 'ai_hybrid' ? 'Synthesize with AI + Validator' : 'Generate with Local Solver'}
+                {blockingPreflightCount > 0
+                  ? `Fix ${blockingPreflightCount} Item(s) to Generate`
+                  : generationMode === 'ai_hybrid'
+                  ? 'Synthesize with AI + Validator'
+                  : 'Generate with Local Solver'}
               </MoltenButton>
             )}
           </div>

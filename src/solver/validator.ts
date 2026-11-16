@@ -110,8 +110,6 @@ export function validateTimetable(
   const teacherOccupancy = new Map<string, Slot[]>();
   // key: `${classId}:${day}:${period}` -> list of slots
   const classOccupancy = new Map<string, Slot[]>();
-  // key: `${roomId}:${day}:${period}` -> list of slots
-  const roomOccupancy = new Map<string, Slot[]>();
 
   // Track per-teacher daily periods: key: `${teacherId}:${day}` -> count
   const teacherDayCount = new Map<string, number>();
@@ -191,26 +189,6 @@ export function validateTimetable(
       const tdKey = `${slot.teacherId}:${slot.day}`;
       teacherDayCount.set(tdKey, (teacherDayCount.get(tdKey) || 0) + 1);
       teacherWeekCount.set(slot.teacherId, (teacherWeekCount.get(slot.teacherId) || 0) + 1);
-    }
-
-    // Special Room Clash
-    const sub = subjectMap.get(slot.subjectId);
-    if (sub && sub.specialRoomId && hardRules.specialRoomClash) {
-      const roomKey = `${sub.specialRoomId}:${slot.day}:${slot.period}`;
-      const existingRoomSlots = roomOccupancy.get(roomKey) || [];
-      if (existingRoomSlots.length > 0) {
-        hardBreakdown.specialRoomClash++;
-        violations.push({
-          ruleId: 'special-room-clash',
-          severity: 'hard',
-          description: `Special Room is simultaneously used by multiple cohorts on Day ${slot.day}, Period ${slot.period}.`,
-          classId: slot.classId,
-          day: slot.day,
-          period: slot.period,
-        });
-      }
-      existingRoomSlots.push(slot);
-      roomOccupancy.set(roomKey, existingRoomSlots);
     }
   });
 

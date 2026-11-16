@@ -46,13 +46,15 @@ export interface Room {
 
 export interface ClassRoom {
   id: ID;
-  name: string;      // e.g. "Grade 10"
+  name: string;      // e.g. "Grade 10" or "8"
   section: string;   // e.g. "A"
   selected: boolean; // whether included in generation
   room?: string;
+  roomLabel?: string; // Optional label only (never affects generation)
   roomId?: ID;
   classTeacherId?: ID;
   strength?: number;
+  status?: 'complete' | 'incomplete' | 'overfilled';
 }
 
 export interface Subject {
@@ -61,6 +63,7 @@ export interface Subject {
   code: string;
   color: string;
   type: 'theory' | 'lab' | 'sports' | 'activity';
+  defaultPeriodsPerWeek?: number; // Default weekly periods (pre-fills class wizard)
   doublePeriod: boolean;
   maxPerDay: number;
   preferMorning: boolean;

@@ -125,7 +125,7 @@ describe('Feasibility Calculation Engine (/src/calc)', () => {
     expect(pigeonholeError?.message).toContain('non-blocked slots available');
   });
 
-  it('detects special room over-subscription collision', () => {
+  it('verifies rooms do not constrain generation (rooms decoupled from solver)', () => {
     const subjects: Subject[] = [
       {
         id: 'sub-lab1',
@@ -136,7 +136,6 @@ describe('Feasibility Calculation Engine (/src/calc)', () => {
         doublePeriod: true,
         maxPerDay: 2,
         preferMorning: false,
-        specialRoomId: 'lab-maker',
       },
     ];
 
@@ -149,16 +148,13 @@ describe('Feasibility Calculation Engine (/src/calc)', () => {
       breaks: [],
     };
 
-    // Demand 50 periods across cohorts for the single 40-slot lab
     const assignments: Assignment[] = [
       { classId: 'c1', subjectId: 'sub-lab1', teacherId: 't1', periodsPerWeek: 30 },
       { classId: 'c2', subjectId: 'sub-lab1', teacherId: 't2', periodsPerWeek: 20 },
     ];
 
     const diagnostics = roomContention(assignments, subjects, school);
-    expect(diagnostics.length).toBe(1);
-    expect(diagnostics[0].code).toBe('ERR_ROOM_OVERCAPACITY');
-    expect(diagnostics[0].message).toContain('Special space "lab-maker" is demanded for 50 periods, but only 40 slots exist');
-    expect(diagnostics[0].suggestion).toContain('Reduce weekly lab periods by 10');
+    // Rooms are virtual labels only and do not constrain timetable generation
+    expect(diagnostics.length).toBe(0);
   });
 });

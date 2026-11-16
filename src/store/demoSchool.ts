@@ -45,28 +45,28 @@ export function getDemoSchoolProject(): Project {
   ];
 
   const classes: ClassRoom[] = [
-    { id: 'cls-8a', name: 'Grade 8', section: 'A', selected: true, room: 'Room 201', roomId: 'room-201', strength: 32 },
-    { id: 'cls-8b', name: 'Grade 8', section: 'B', selected: true, room: 'Room 202', roomId: 'room-202', strength: 30 },
-    { id: 'cls-9a', name: 'Grade 9', section: 'A', selected: true, room: 'Room 301', roomId: 'room-301', strength: 34 },
-    { id: 'cls-9b', name: 'Grade 9', section: 'B', selected: true, room: 'Room 302', roomId: 'room-302', strength: 33 },
-    { id: 'cls-10a', name: 'Grade 10', section: 'A', selected: true, room: 'Room 401', roomId: 'room-401', strength: 35 },
-    { id: 'cls-10b', name: 'Grade 10', section: 'B', selected: true, room: 'Room 402', roomId: 'room-402', strength: 31 },
-    { id: 'cls-11a', name: 'Grade 11', section: 'A', selected: true, room: 'Room 201', roomId: 'room-201', strength: 28 },
-    { id: 'cls-12a', name: 'Grade 12', section: 'A', selected: true, room: 'Room 202', roomId: 'room-202', strength: 29 },
+    { id: 'cls-8a', name: 'Grade 8', section: 'A', selected: true, room: 'Room 201', roomLabel: 'Room 201', roomId: 'room-201', strength: 32, status: 'complete' },
+    { id: 'cls-8b', name: 'Grade 8', section: 'B', selected: true, room: 'Room 202', roomLabel: 'Room 202', roomId: 'room-202', strength: 30, status: 'complete' },
+    { id: 'cls-9a', name: 'Grade 9', section: 'A', selected: true, room: 'Room 301', roomLabel: 'Room 301', roomId: 'room-301', strength: 34, status: 'complete' },
+    { id: 'cls-9b', name: 'Grade 9', section: 'B', selected: true, room: 'Room 302', roomLabel: 'Room 302', roomId: 'room-302', strength: 33, status: 'complete' },
+    { id: 'cls-10a', name: 'Grade 10', section: 'A', selected: true, room: 'Room 401', roomLabel: 'Room 401', roomId: 'room-401', strength: 35, status: 'complete' },
+    { id: 'cls-10b', name: 'Grade 10', section: 'B', selected: true, room: 'Room 402', roomLabel: 'Room 402', roomId: 'room-402', strength: 31, status: 'complete' },
+    { id: 'cls-11a', name: 'Grade 11', section: 'A', selected: true, room: 'Room 201', roomLabel: 'Room 201', roomId: 'room-201', strength: 28, status: 'complete' },
+    { id: 'cls-12a', name: 'Grade 12', section: 'A', selected: true, room: 'Room 202', roomLabel: 'Room 202', roomId: 'room-202', strength: 29, status: 'complete' },
   ];
 
   const subjects: Subject[] = [
-    { id: 'sub-math', name: 'Mathematics', code: 'MATH', color: '#f97316', type: 'theory', doublePeriod: false, maxPerDay: 2, preferMorning: true },
-    { id: 'sub-phy', name: 'Physics', code: 'PHY', color: '#a855f7', type: 'theory', doublePeriod: false, maxPerDay: 2, preferMorning: true },
-    { id: 'sub-phylab', name: 'Physics Lab', code: 'PHY-LAB', color: '#7c3aed', type: 'lab', doublePeriod: true, maxPerDay: 2, preferMorning: false, specialRoomId: 'room-phylab' },
-    { id: 'sub-chem', name: 'Chemistry', code: 'CHEM', color: '#06b6d4', type: 'theory', doublePeriod: false, maxPerDay: 2, preferMorning: true },
-    { id: 'sub-chemlab', name: 'Chemistry Lab', code: 'CHEM-LAB', color: '#0891b2', type: 'lab', doublePeriod: true, maxPerDay: 2, preferMorning: false, specialRoomId: 'room-chemlab' },
-    { id: 'sub-eng', name: 'English Literature', code: 'ENG', color: '#10b981', type: 'theory', doublePeriod: false, maxPerDay: 2, preferMorning: false },
-    { id: 'sub-bio', name: 'Biology & Environmental', code: 'BIO', color: '#84cc16', type: 'theory', doublePeriod: false, maxPerDay: 2, preferMorning: true },
-    { id: 'sub-cs', name: 'Computer Science', code: 'CS', color: '#6366f1', type: 'lab', doublePeriod: true, maxPerDay: 2, preferMorning: false, specialRoomId: 'room-cslab' },
-    { id: 'sub-hist', name: 'History & Civics', code: 'HIST', color: '#eab308', type: 'theory', doublePeriod: false, maxPerDay: 1, preferMorning: false },
-    { id: 'sub-pe', name: 'Physical Education', code: 'PE', color: '#ef4444', type: 'sports', doublePeriod: false, maxPerDay: 1, preferMorning: false },
-    { id: 'sub-art', name: 'Creative Arts & Music', code: 'ART', color: '#ec4899', type: 'activity', doublePeriod: false, maxPerDay: 1, preferMorning: false },
+    { id: 'sub-math', name: 'Mathematics', code: 'MATH', color: '#f97316', type: 'theory', defaultPeriodsPerWeek: 6, doublePeriod: false, maxPerDay: 2, preferMorning: true },
+    { id: 'sub-phy', name: 'Physics', code: 'PHY', color: '#a855f7', type: 'theory', defaultPeriodsPerWeek: 4, doublePeriod: false, maxPerDay: 2, preferMorning: true },
+    { id: 'sub-phylab', name: 'Physics Lab', code: 'PHY-LAB', color: '#7c3aed', type: 'lab', defaultPeriodsPerWeek: 2, doublePeriod: true, maxPerDay: 2, preferMorning: false },
+    { id: 'sub-chem', name: 'Chemistry', code: 'CHEM', color: '#06b6d4', type: 'theory', defaultPeriodsPerWeek: 4, doublePeriod: false, maxPerDay: 2, preferMorning: true },
+    { id: 'sub-chemlab', name: 'Chemistry Lab', code: 'CHEM-LAB', color: '#0891b2', type: 'lab', defaultPeriodsPerWeek: 2, doublePeriod: true, maxPerDay: 2, preferMorning: false },
+    { id: 'sub-eng', name: 'English Literature', code: 'ENG', color: '#10b981', type: 'theory', defaultPeriodsPerWeek: 5, doublePeriod: false, maxPerDay: 2, preferMorning: false },
+    { id: 'sub-bio', name: 'Biology & Environmental', code: 'BIO', color: '#84cc16', type: 'theory', defaultPeriodsPerWeek: 4, doublePeriod: false, maxPerDay: 2, preferMorning: true },
+    { id: 'sub-cs', name: 'Computer Science', code: 'CS', color: '#6366f1', type: 'lab', defaultPeriodsPerWeek: 4, doublePeriod: true, maxPerDay: 2, preferMorning: false },
+    { id: 'sub-hist', name: 'History & Civics', code: 'HIST', color: '#eab308', type: 'theory', defaultPeriodsPerWeek: 4, doublePeriod: false, maxPerDay: 1, preferMorning: false },
+    { id: 'sub-pe', name: 'Physical Education', code: 'PE', color: '#ef4444', type: 'sports', defaultPeriodsPerWeek: 5, doublePeriod: false, maxPerDay: 1, preferMorning: false },
+    { id: 'sub-art', name: 'Creative Arts & Music', code: 'ART', color: '#ec4899', type: 'activity', defaultPeriodsPerWeek: 4, doublePeriod: false, maxPerDay: 1, preferMorning: false },
   ];
 
   const teachers: Teacher[] = [

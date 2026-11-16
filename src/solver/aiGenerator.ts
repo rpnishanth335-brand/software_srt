@@ -3,6 +3,8 @@ import { computeTimetableCalculations, FullTimetableCalculations } from '../calc
 import { validateTimetable, ValidationSummary } from './validator';
 import { callGeminiStructured } from '../services/geminiClient';
 import { SolverEngine } from './engine';
+import { CHRONOFORGE_SYSTEM_PROMPT } from '../ai/systemPrompt';
+import { FEW_SHOT_EXAMPLES } from '../ai/examples';
 
 export type AiGeneratorStage =
   | 'calculating'
@@ -102,7 +104,6 @@ export function buildCompactAiPayload(
       name: s.name,
       doublePeriod: s.doublePeriod,
       preferMorning: s.preferMorning,
-      specialRoomId: s.specialRoomId || null,
       maxPerDay: s.maxPerDay,
     })),
     teachers: teachers.map((t) => ({
@@ -210,22 +211,32 @@ export async function generateTimetableWithAi(
       progressPct: 40,
     });
 
+    const highLoadTeachers = (calculations.teachers || [])
+      .filter((t) => t.utilizationPct >= 75)
+      .map((t) => `${t.teacherName} (${t.requiredPeriods}/${t.maxPerWeek} periods, ${Math.round(t.utilizationPct)}% load)`)
+      .join(', ');
+
+    const doublePeriodSubjects = (project.subjects || [])
+      .filter((s) => s.doublePeriod)
+      .map((s) => s.name)
+      .join(', ');
+
+    const fewShotSummary = FEW_SHOT_EXAMPLES.map((ex) => `• ${ex.title}: ${ex.solutionConcept}`).join('\n');
+
     const aiPrompt = `
-You are an expert school timetable generator. Schedule lessons for all selected classes into conflict-free slots.
+Generate a conflict-free, master school timetable satisfying all hard constraints.
 
-CRITICAL HARD RULES:
-1. No Teacher Double-Booking: A teacher cannot teach two different classes at the same (day, period).
-2. No Class Overlap: A class cannot have two lessons at the same (day, period).
-3. Respect Teacher Blocked Slots: Never place a teacher in their blocked slots.
-4. Exact Period Counts: Every class assignment's periodsPerWeek must be placed exactly.
-5. Max Per Day & Week: Never exceed a teacher's maxPerDay or maxPerWeek.
-6. Double Periods: Must be consecutive periods in the same day and cannot cross school breaks.
-7. Locked Slots: Must remain exactly as provided in the lockedSlots array.
+PRE-CALCULATED BOTTLENECKS & HEURISTIC GUIDANCE:
+${highLoadTeachers ? `• High-Capacity Teachers (Prioritize early to avoid pigeonhole clashes): ${highLoadTeachers}` : '• Teacher loads are well balanced.'}
+${doublePeriodSubjects ? `• Double-Period Subjects (Must be 2 consecutive periods without crossing breaks): ${doublePeriodSubjects}` : '• No double periods required.'}
 
-Input Data:
+FEW-SHOT CANONICAL PATTERNS:
+${fewShotSummary}
+
+PROJECT INPUT SPECIFICATION:
 ${JSON.stringify(compactPayload, null, 2)}
 
-Produce a valid JSON object matching the requested schema with all required slots and explanatory notes.
+Produce a valid JSON object matching the requested schema with all required slots and explanatory notes. Zero hard conflicts are permitted.
     `.trim();
 
     const aiRes = await callGeminiStructured<{ slots: any[]; notes?: string }>(
@@ -235,6 +246,7 @@ Produce a valid JSON object matching the requested schema with all required slot
         model: options.model,
         temperature: options.temperature,
         useProxy: options.useProxy,
+        systemInstruction: CHRONOFORGE_SYSTEM_PROMPT,
         responseSchema: GEMINI_TIMETABLE_SCHEMA,
         signal: options.signal,
       }
@@ -287,6 +299,7 @@ Return the updated complete slots array.
             model: options.model,
             temperature: 0.1,
             useProxy: options.useProxy,
+            systemInstruction: CHRONOFORGE_SYSTEM_PROMPT,
             responseSchema: GEMINI_TIMETABLE_SCHEMA,
             signal: options.signal,
           }

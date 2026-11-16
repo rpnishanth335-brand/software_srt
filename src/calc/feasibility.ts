@@ -72,50 +72,13 @@ export function subjectDemand(assignments: Assignment[], subjectId: ID): number 
  * e.g., If single Physics Lab only has 44 available slots per week, total demand cannot exceed 44.
  */
 export function roomContention(
-  assignments: Assignment[], 
-  subjects: Subject[], 
-  school: School
+  _assignments: Assignment[], 
+  _subjects: Subject[], 
+  _school: School
 ): DiagnosticItem[] {
-  const diagnostics: DiagnosticItem[] = [];
-  const totalSchoolSlots = school.days.reduce((sum, d) => sum + (school.periodsByDay[d] || 8), 0);
-
-  // Group subjects by special room
-  const roomDemandMap: Record<string, { subjects: Subject[]; demand: number }> = {};
-
-  subjects.forEach((s) => {
-    if (s.specialRoomId) {
-      if (!roomDemandMap[s.specialRoomId]) {
-        roomDemandMap[s.specialRoomId] = { subjects: [], demand: 0 };
-      }
-      roomDemandMap[s.specialRoomId].subjects.push(s);
-      const demand = subjectDemand(assignments, s.id);
-      roomDemandMap[s.specialRoomId].demand += demand;
-    }
-  });
-
-  Object.entries(roomDemandMap).forEach(([roomId, data]) => {
-    if (data.demand > totalSchoolSlots) {
-      diagnostics.push({
-        id: `room-overflow-${roomId}`,
-        severity: 'error',
-        code: 'ERR_ROOM_OVERCAPACITY',
-        message: `Special space "${roomId}" is demanded for ${data.demand} periods, but only ${totalSchoolSlots} slots exist in the week.`,
-        affected: data.subjects.map((s) => s.id),
-        suggestion: `Reduce weekly lab periods by ${data.demand - totalSchoolSlots} or assign an additional lab space.`,
-      });
-    } else if (data.demand > totalSchoolSlots * 0.85) {
-      diagnostics.push({
-        id: `room-warn-${roomId}`,
-        severity: 'warning',
-        code: 'WARN_ROOM_HIGH_CONTENTION',
-        message: `Special space "${roomId}" is utilized at ${Math.round((data.demand / totalSchoolSlots) * 100)}% capacity (${data.demand}/${totalSchoolSlots} periods). High risk of timetable bottleneck.`,
-        affected: data.subjects.map((s) => s.id),
-        suggestion: `Consider spreading lab sessions or keeping some periods flexible.`,
-      });
-    }
-  });
-
-  return diagnostics;
+  // Rooms and special labs are deprecated from timetable generation.
+  // Room numbers are now optional display labels on classes only.
+  return [];
 }
 
 /**

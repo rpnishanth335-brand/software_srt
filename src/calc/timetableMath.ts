@@ -94,7 +94,7 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
  * locally before invoking simulated annealing or cloud AI.
  */
 export function computeTimetableCalculations(project: Project): FullTimetableCalculations {
-  const { school, classes, subjects, teachers, rooms, assignments } = project;
+  const { school, classes, subjects, teachers, assignments } = project;
   const activeDays = school.days || [1, 2, 3, 4, 5];
   const selectedClasses = classes.filter((c) => c.selected);
 
@@ -215,40 +215,7 @@ export function computeTimetableCalculations(project: Project): FullTimetableCal
     };
   });
 
-  // 4. Room & Lab Calculations
-  const roomCalculations: RoomCalculation[] = rooms.map((rm) => {
-    // Check subjects assigned to this special room
-    const assignedSubjects = subjects.filter((s) => s.specialRoomId === rm.id);
-    const subjectIds = new Set(assignedSubjects.map((s) => s.id));
-
-    const roomAssignments = assignments.filter(
-      (a) => subjectIds.has(a.subjectId) && selectedClasses.some((c) => c.id === a.classId)
-    );
-    const demandPeriods = roomAssignments.reduce((sum, a) => sum + a.periodsPerWeek, 0);
-
-    const availableWeeklySlots = totalSlotsPerWeek;
-    const utilizationPct = availableWeeklySlots > 0
-      ? Math.round((demandPeriods / availableWeeklySlots) * 100)
-      : 0;
-
-    const collisionRiskPct = Math.min(100, Math.round((demandPeriods / availableWeeklySlots) * 100));
-    const isOverbooked = demandPeriods > availableWeeklySlots;
-
-    return {
-      roomId: rm.id,
-      roomName: rm.name,
-      code: rm.code || rm.number,
-      type: rm.type,
-      capacity: rm.capacity,
-      availableWeeklySlots,
-      demandPeriods,
-      utilizationPct,
-      collisionRiskPct,
-      isOverbooked,
-    };
-  });
-
-  // 5. Pigeonhole Scarcity & Ordering by Difficulty
+  // 4. Pigeonhole Scarcity & Ordering by Difficulty
   const pigeonholeAnalysis: ConstrainedLessonScarcity[] = [];
   selectedClasses.forEach((cls) => {
     const classAssignments = assignments.filter((a) => a.classId === cls.id);
@@ -281,12 +248,6 @@ export function computeTimetableCalculations(project: Project): FullTimetableCal
       if (sub.doublePeriod) {
         difficultyScore += 25;
         reasons.push('Requires consecutive double period');
-      }
-
-      // Special room constraint
-      if (sub.specialRoomId) {
-        difficultyScore += 20;
-        reasons.push('Special room required');
       }
 
       // High weekly frequency
@@ -356,16 +317,6 @@ export function computeTimetableCalculations(project: Project): FullTimetableCal
     });
   }
 
-  // Check room overbooking
-  const overbookedRooms = roomCalculations.filter((r) => r.isOverbooked);
-  if (overbookedRooms.length > 0) {
-    hasBlockingErrors = true;
-    overbookedRooms.forEach((or) => {
-      reasons.push(`Facility "${or.roomName}" has ${or.demandPeriods} periods demanded but only ${or.availableWeeklySlots} school slots available.`);
-      fixSuggestions.push(`Reassign some subjects to standard classrooms or split classes.`);
-    });
-  }
-
   const bottleneckTeachers = teacherCalculations.filter((t) => t.isBottleneck);
 
   let verdict: 'Feasible' | 'Tight' | 'Impossible' = 'Feasible';
@@ -383,7 +334,7 @@ export function computeTimetableCalculations(project: Project): FullTimetableCal
     classes: classCalculations,
     subjectDistributions,
     teachers: teacherCalculations,
-    rooms: roomCalculations,
+    rooms: [],
     global: {
       totalLessonsToPlace,
       totalTeacherHours,

@@ -48,7 +48,7 @@ export function exportCsvTimetable(project: Project, slots: Slot[]): void {
     const row = [
       escapeCsv(cls?.name || 'Class'),
       escapeCsv(cls?.section || ''),
-      escapeCsv(cls?.room || ''),
+      escapeCsv(cls?.roomLabel || ''),
       escapeCsv(DAY_NAMES[slot.day] || `Day ${slot.day}`),
       String(slot.period),
       escapeCsv(startTime),

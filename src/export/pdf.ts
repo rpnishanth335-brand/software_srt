@@ -100,12 +100,12 @@ function renderClassPage(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(15, 23, 42); // slate-900
-  doc.text(`CLASS: ${cls?.name || 'Class'} – Section ${cls?.section || ''}`, 52, 94);
+  doc.text(`CLASS: ${cls?.name || 'Class'} – Section ${cls?.section || ''}${cls?.roomLabel ? ` (Room ${cls.roomLabel})` : ''}`, 52, 94);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(71, 85, 105);
-  doc.text(`Room: ${cls?.room || 'TBA'}`, 340, 94);
+  doc.text(`Room: ${cls?.roomLabel || 'General'}`, 340, 94);
   const classTeacher = teachers.find((t) => t.id === cls?.classTeacherId);
   doc.text(`Class Teacher: ${classTeacher ? classTeacher.name : 'Unassigned'}`, 540, 94);
 
@@ -137,7 +137,7 @@ function renderClassPage(
       if (slot && slot.subjectId) {
         const sub = subjectMap.get(slot.subjectId);
         const tea = slot.teacherId ? teacherMap.get(slot.teacherId) : undefined;
-        const cellText = `${sub?.name || 'Subject'}\n[${sub?.code || ''}] • ${tea?.code || ''}\n${cls?.room ? `Rm: ${cls.room}` : ''}`;
+        const cellText = `${sub?.name || 'Subject'}\n[${sub?.code || ''}] • ${tea?.code || ''}${cls?.roomLabel ? `\nRm: ${cls.roomLabel}` : ''}`;
         row.push(cellText);
 
         if (sub?.color) {

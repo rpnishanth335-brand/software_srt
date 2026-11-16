@@ -120,7 +120,7 @@ export const FeasibilityPage: React.FC = () => {
               </div>
               <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
                 {isFeasible
-                  ? 'All selected classes have valid curriculum distributions, faculty workloads are within constraints, and rooms have sufficient capacity.'
+                  ? 'All selected classes have valid curriculum distributions and faculty workloads are strictly within constraints.'
                   : `Found ${blockingErrors.length} blocking mathematical contradiction${blockingErrors.length > 1 ? 's' : ''}. Resolve them below before launching the solver.`}
               </p>
             </div>
@@ -172,11 +172,11 @@ export const FeasibilityPage: React.FC = () => {
                 <MoltenButton
                   size="sm"
                   variant="glass"
-                  onClick={() => setCurrentRoute(err.code.includes('TEACHER') ? 'staff' : 'assignments')}
+                  onClick={() => setCurrentRoute(err.code.includes('TEACHER') ? 'staff' : 'classes')}
                   rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                   className="shrink-0 text-amber-300 border-amber-500/30 hover:bg-amber-500/10"
                 >
-                  Fix in {err.code.includes('TEACHER') ? 'Staff' : 'Assignments'}
+                  Fix in {err.code.includes('TEACHER') ? 'Staff' : 'Classes'}
                 </MoltenButton>
               </PlasmaGlass>
             ))}
@@ -213,10 +213,10 @@ export const FeasibilityPage: React.FC = () => {
                 <MoltenButton
                   size="sm"
                   variant="ghost"
-                  onClick={() => setCurrentRoute('assignments')}
+                  onClick={() => setCurrentRoute('classes')}
                   className="shrink-0 text-amber-300"
                 >
-                  Adjust Assignments
+                  Adjust in Classes
                 </MoltenButton>
               </PlasmaGlass>
             ))}

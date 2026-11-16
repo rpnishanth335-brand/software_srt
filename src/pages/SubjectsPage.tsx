@@ -16,8 +16,7 @@ import {
   Upload,
   HelpCircle,
   Layers,
-  Sun,
-  FlaskConical
+  Sun
 } from 'lucide-react';
 import { Subject, ID } from '../types';
 
@@ -45,7 +44,7 @@ export const SubjectsPage: React.FC = () => {
     addToast
   } = useTimetableStore();
 
-  const { subjects, rooms, teachers } = project;
+  const { subjects, teachers } = project;
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,10 +55,10 @@ export const SubjectsPage: React.FC = () => {
   const [code, setCode] = useState('');
   const [color, setColor] = useState('#f97316');
   const [type, setType] = useState<Subject['type']>('theory');
+  const [defaultPeriodsPerWeek, setDefaultPeriodsPerWeek] = useState(5);
   const [doublePeriod, setDoublePeriod] = useState(false);
   const [preferMorning, setPreferMorning] = useState(false);
   const [maxPerDay, setMaxPerDay] = useState(2);
-  const [specialRoomId, setSpecialRoomId] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
   // Edit Modal State
@@ -68,10 +67,10 @@ export const SubjectsPage: React.FC = () => {
   const [editCode, setEditCode] = useState('');
   const [editColor, setEditColor] = useState('');
   const [editType, setEditType] = useState<Subject['type']>('theory');
+  const [editDefaultPeriodsPerWeek, setEditDefaultPeriodsPerWeek] = useState(5);
   const [editDoublePeriod, setEditDoublePeriod] = useState(false);
   const [editPreferMorning, setEditPreferMorning] = useState(false);
   const [editMaxPerDay, setEditMaxPerDay] = useState(2);
-  const [editSpecialRoomId, setEditSpecialRoomId] = useState('');
   const [editError, setEditError] = useState<string | null>(null);
 
   // Delete Target for Referential Modal
@@ -117,21 +116,20 @@ export const SubjectsPage: React.FC = () => {
   }, [subjects, searchQuery, typeFilter]);
 
   // Handle Add
-  const handleAddSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeAddSubject = (): boolean => {
     if (!name.trim()) {
       setFormError('Subject Name is required (e.g. Physics)');
-      return;
+      return false;
     }
     if (!code.trim()) {
       setFormError('Subject Code is required (e.g. PHY)');
-      return;
+      return false;
     }
 
     const normCode = code.trim().toUpperCase();
     if (subjects.some(s => s.code.toUpperCase() === normCode)) {
       setFormError(`Subject Code "${normCode}" is already in use.`);
-      return;
+      return false;
     }
 
     setFormError(null);
@@ -140,18 +138,33 @@ export const SubjectsPage: React.FC = () => {
       code: normCode,
       color,
       type,
+      defaultPeriodsPerWeek: defaultPeriodsPerWeek || 5,
       doublePeriod,
       preferMorning,
       maxPerDay,
-      specialRoomId: specialRoomId || undefined,
     });
+    return true;
+  };
 
-    setName('');
-    setCode('');
-    setDoublePeriod(false);
-    setPreferMorning(false);
-    setMaxPerDay(2);
-    setSpecialRoomId('');
+  const handleAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (executeAddSubject()) {
+      setName('');
+      setCode('');
+      setDoublePeriod(false);
+      setPreferMorning(false);
+      setMaxPerDay(2);
+    }
+  };
+
+  const handleAddAnother = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (executeAddSubject()) {
+      setName('');
+      setCode('');
+      // Keep type and periods for easy sequential creation
+      addToast('Added! Ready for next subject.', 'info');
+    }
   };
 
   // Open Edit
@@ -161,10 +174,10 @@ export const SubjectsPage: React.FC = () => {
     setEditCode(sub.code);
     setEditColor(sub.color);
     setEditType(sub.type);
+    setEditDefaultPeriodsPerWeek(sub.defaultPeriodsPerWeek || 5);
     setEditDoublePeriod(sub.doublePeriod || false);
     setEditPreferMorning(sub.preferMorning || false);
     setEditMaxPerDay(sub.maxPerDay || 2);
-    setEditSpecialRoomId(sub.specialRoomId || '');
     setEditError(null);
   };
 
@@ -193,10 +206,10 @@ export const SubjectsPage: React.FC = () => {
       code: normCode,
       color: editColor,
       type: editType,
+      defaultPeriodsPerWeek: editDefaultPeriodsPerWeek || 5,
       doublePeriod: editDoublePeriod,
       preferMorning: editPreferMorning,
       maxPerDay: editMaxPerDay,
-      specialRoomId: editSpecialRoomId || undefined,
     });
     setEditingSubject(null);
   };
@@ -233,12 +246,13 @@ export const SubjectsPage: React.FC = () => {
 
   // CSV Export
   const exportSubjectsCSV = () => {
-    const headers = ['Name', 'Code', 'Type', 'Color', 'DoublePeriod', 'PreferMorning', 'MaxPerDay'];
+    const headers = ['Name', 'Code', 'Type', 'Color', 'DefaultPeriodsPerWeek', 'DoublePeriod', 'PreferMorning', 'MaxPerDay'];
     const rows = subjects.map(s => [
       `"${s.name}"`,
       `"${s.code}"`,
       s.type,
       `"${s.color}"`,
+      s.defaultPeriodsPerWeek || 5,
       s.doublePeriod ? 'true' : 'false',
       s.preferMorning ? 'true' : 'false',
       s.maxPerDay || 2,
@@ -255,7 +269,7 @@ export const SubjectsPage: React.FC = () => {
 
   // Download Template
   const downloadTemplate = () => {
-    const csv = 'Name,Code,Type,Color,DoublePeriod,PreferMorning,MaxPerDay\nPhysics,PHY,lab,#3b82f6,true,false,2\nMathematics,MATH,theory,#f97316,false,true,2\nPhysical Education,PE,sports,#10b981,false,false,2';
+    const csv = 'Name,Code,Type,Color,DefaultPeriodsPerWeek,DoublePeriod,PreferMorning,MaxPerDay\nPhysics,PHY,lab,#3b82f6,4,true,false,2\nMathematics,MATH,theory,#f97316,6,false,true,2\nPhysical Education,PE,sports,#10b981,2,false,false,2';
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -285,9 +299,10 @@ export const SubjectsPage: React.FC = () => {
               code: parts[1].toUpperCase(),
               type: (parts[2]?.toLowerCase() as Subject['type']) || 'theory',
               color: parts[3] || PRESET_COLORS[imported % PRESET_COLORS.length],
-              doublePeriod: parts[4]?.toLowerCase() === 'true',
-              preferMorning: parts[5]?.toLowerCase() === 'true',
-              maxPerDay: parts[6] ? parseInt(parts[6], 10) : 2,
+              defaultPeriodsPerWeek: parts[4] ? parseInt(parts[4], 10) : 5,
+              doublePeriod: parts[5]?.toLowerCase() === 'true',
+              preferMorning: parts[6]?.toLowerCase() === 'true',
+              maxPerDay: parts[7] ? parseInt(parts[7], 10) : 2,
             });
             imported++;
           }
@@ -404,17 +419,16 @@ export const SubjectsPage: React.FC = () => {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-[11px] font-semibold text-slate-400 mb-1">Special Room</label>
-              <select
-                value={specialRoomId}
-                onChange={(e) => setSpecialRoomId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-sm focus:outline-none focus:border-ember-500"
-              >
-                <option value="">None Required</option>
-                {rooms.map((r) => (
-                  <option key={r.id} value={r.id}>{r.name} ({r.code || r.number})</option>
-                ))}
-              </select>
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1">Default Periods/Wk *</label>
+              <input
+                type="number"
+                min={1}
+                max={15}
+                value={defaultPeriodsPerWeek}
+                onChange={(e) => setDefaultPeriodsPerWeek(parseInt(e.target.value, 10) || 5)}
+                className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-mono-code focus:outline-none focus:border-ember-500"
+                title="Default periods per week to pre-fill in class setup"
+              />
             </div>
 
             <div className="sm:col-span-2">
@@ -440,9 +454,12 @@ export const SubjectsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="sm:col-span-1">
-              <MoltenButton type="submit" size="md" variant="molten" className="w-full justify-center">
-                Add
+            <div className="sm:col-span-3 flex items-center gap-2">
+              <MoltenButton type="submit" size="md" variant="molten" className="flex-1 justify-center">
+                Add Subject
+              </MoltenButton>
+              <MoltenButton type="button" size="md" variant="glass" onClick={handleAddAnother} className="px-3">
+                Add Another
               </MoltenButton>
             </div>
           </div>
@@ -556,7 +573,6 @@ export const SubjectsPage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredSubjects.map((sub) => {
             const qualifiedTeachers = teachers.filter(t => t.subjectIds.includes(sub.id));
-            const specialRoom = rooms.find(r => r.id === sub.specialRoomId);
             const isBatchSelected = selectedSubjectIds.includes(sub.id);
 
             return (
@@ -629,17 +645,12 @@ export const SubjectsPage: React.FC = () => {
                     </span>
                   </div>
 
-                  {sub.specialRoomId && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] flex items-center gap-1">
-                        <FlaskConical className="w-3 h-3 text-purple-400" />
-                        Room:
-                      </span>
-                      <span className="text-amber-300 text-[11px]">
-                        {specialRoom ? specialRoom.name : 'Custom Room'}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px]">Default Load:</span>
+                    <span className="text-amber-300 font-mono-code text-[11px] font-bold">
+                      {sub.defaultPeriodsPerWeek || 5} periods/wk
+                    </span>
+                  </div>
                 </div>
 
                 {/* Badges */}
@@ -710,17 +721,15 @@ export const SubjectsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Special Room</label>
-            <select
-              value={editSpecialRoomId}
-              onChange={(e) => setEditSpecialRoomId(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
-            >
-              <option value="">None Required</option>
-              {rooms.map((r) => (
-                <option key={r.id} value={r.id}>{r.name} ({r.code || r.number})</option>
-              ))}
-            </select>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Default Periods / Week *</label>
+            <input
+              type="number"
+              min={1}
+              max={15}
+              value={editDefaultPeriodsPerWeek}
+              onChange={(e) => setEditDefaultPeriodsPerWeek(parseInt(e.target.value, 10) || 5)}
+              className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-mono-code focus:outline-none focus:border-amber-400"
+            />
           </div>
 
           <div className="flex items-center gap-3">

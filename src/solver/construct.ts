@@ -173,15 +173,6 @@ export function constructInitialGrid(
     return teacher ? teacher.blocked.some((b) => b.day === day && b.period === period) : false;
   };
 
-  const isRoomBusy = (roomId: ID | undefined, day: number, period: number) => {
-    if (!roomId) return false;
-    for (const [key, l] of placements.entries()) {
-      const [, d, p] = key.split(':').map(Number);
-      if (d === day && p === period && l.specialRoomId === roomId) return true;
-    }
-    return false;
-  };
-
   // Helper to generate disjoint double period block slots for a day
   const getDisjointDoubleBlocks = (day: number) => {
     const maxP = school.periodsByDay[day] || 8;
@@ -216,9 +207,7 @@ export function constructInitialGrid(
           !isTeacherBusy(p1.teacherId, day, p) &&
           !isTeacherBusy(p1.teacherId, day, pNext) &&
           !isTeacherBlocked(p1.teacherId, day, p) &&
-          !isTeacherBlocked(p1.teacherId, day, pNext) &&
-          !isRoomBusy(p1.specialRoomId, day, p) &&
-          !isRoomBusy(p1.specialRoomId, day, pNext)
+          !isTeacherBlocked(p1.teacherId, day, pNext)
         ) {
           placements.set(`${classId}:${day}:${p}`, p1);
           placements.set(`${classId}:${day}:${pNext}`, p2);
@@ -265,8 +254,7 @@ export function constructInitialGrid(
         if (
           isFree(classId, day, p) &&
           !isTeacherBusy(lesson.teacherId, day, p) &&
-          !isTeacherBlocked(lesson.teacherId, day, p) &&
-          !isRoomBusy(lesson.specialRoomId, day, p)
+          !isTeacherBlocked(lesson.teacherId, day, p)
         ) {
           placements.set(`${classId}:${day}:${p}`, lesson);
           placed = true;

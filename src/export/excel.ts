@@ -49,7 +49,7 @@ export async function exportExcelWorkbook(project: Project, slots: Slot[]): Prom
     school.days.forEach((day) => {
       const rowData = [
         `${cls.name}-${cls.section}`,
-        cls.room || 'TBA',
+        cls.roomLabel || '—',
         DAY_NAMES[day] || `Day ${day}`,
       ];
 
@@ -86,7 +86,7 @@ export async function exportExcelWorkbook(project: Project, slots: Slot[]): Prom
     // Header banner
     ws.mergeCells(1, 1, 1, maxPeriods + 1);
     const clsBanner = ws.getCell(1, 1);
-    clsBanner.value = `${school.name} — Class ${cls.name} (${cls.section}) Timetable`;
+    clsBanner.value = `${school.name} — Class ${cls.name} (${cls.section})${cls.roomLabel ? ` [Room ${cls.roomLabel}]` : ''} Timetable`;
     clsBanner.font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FFFFFFFF' } };
     clsBanner.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
     clsBanner.alignment = { horizontal: 'center', vertical: 'middle' };

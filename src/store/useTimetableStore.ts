@@ -7,6 +7,7 @@ import {
   Subject, 
   Teacher, 
   Room,
+  Assignment,
   RuleConfig, 
   TimetableVersion, 
   Slot, 
@@ -65,6 +66,11 @@ export interface TimetableState {
   selectAllClasses: (selected: boolean) => void;
   bulkDeleteClasses: (ids: ID[]) => void;
   quickGenerateClasses: (startGrade: number, endGrade: number, sections: string[]) => void;
+  saveClassWithAssignments: (
+    classData: Omit<ClassRoom, 'id'> & { id?: ID },
+    assignments: Array<{ subjectId: ID; staffId: ID; periodsPerWeek: number }>
+  ) => void;
+  copyClassSetup: (sourceClassId: ID, targetClassIds: ID[]) => void;
   
   // Subjects
   addSubject: (sub: Omit<Subject, 'id'>) => void;
@@ -374,6 +380,107 @@ export const useTimetableStore = create<TimetableState>()(
         get().addToast(`Generated ${newClasses.length} class cohorts!`, 'success');
       },
 
+      saveClassWithAssignments: (classData, assignmentsList) => {
+        const state = get();
+        const activeDays = state.project.school.days || [1, 2, 3, 4, 5];
+        const periodsByDay = state.project.school.periodsByDay || {};
+        const totalSlots = activeDays.reduce((sum, d) => sum + (periodsByDay[d] || 8), 0);
+
+        const totalPeriods = assignmentsList.reduce((sum, a) => sum + a.periodsPerWeek, 0);
+        let status: 'complete' | 'incomplete' | 'overfilled' = 'complete';
+        if (totalPeriods > totalSlots) {
+          status = 'overfilled';
+        } else if (totalPeriods < totalSlots || assignmentsList.some((a) => !a.staffId)) {
+          status = 'incomplete';
+        }
+
+        const classId = classData.id || `cls-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+        const fullClass: ClassRoom = {
+          ...classData,
+          id: classId,
+          status,
+          room: classData.roomLabel || classData.room || '',
+          roomLabel: classData.roomLabel || classData.room || '',
+        };
+
+        const newAssignments: Assignment[] = assignmentsList.map((a) => ({
+          classId,
+          subjectId: a.subjectId,
+          teacherId: a.staffId,
+          periodsPerWeek: a.periodsPerWeek,
+        }));
+
+        set((s) => {
+          const exists = s.project.classes.some((c) => c.id === classId);
+          const updatedClasses = exists
+            ? s.project.classes.map((c) => (c.id === classId ? fullClass : c))
+            : [...s.project.classes, fullClass];
+
+          const filteredAssignments = s.project.assignments.filter((a) => a.classId !== classId);
+
+          return {
+            project: {
+              ...s.project,
+              classes: updatedClasses,
+              assignments: [...filteredAssignments, ...newAssignments],
+              updatedAt: Date.now(),
+            },
+            isDirty: true,
+          };
+        });
+
+        get().persistToDatabase();
+        get().addToast(`Saved class ${fullClass.name} – ${fullClass.section} with ${assignmentsList.length} subjects!`, 'success');
+      },
+
+      copyClassSetup: (sourceClassId, targetClassIds) => {
+        const state = get();
+        const sourceAssignments = state.project.assignments.filter((a) => a.classId === sourceClassId);
+        if (sourceAssignments.length === 0) {
+          get().addToast('Source class has no curriculum setup to copy.', 'warning');
+          return;
+        }
+
+        const activeDays = state.project.school.days || [1, 2, 3, 4, 5];
+        const periodsByDay = state.project.school.periodsByDay || {};
+        const totalSlots = activeDays.reduce((sum, d) => sum + (periodsByDay[d] || 8), 0);
+        const totalPeriods = sourceAssignments.reduce((sum, a) => sum + a.periodsPerWeek, 0);
+        const status: 'complete' | 'incomplete' | 'overfilled' = totalPeriods === totalSlots ? 'complete' : totalPeriods > totalSlots ? 'overfilled' : 'incomplete';
+
+        set((s) => {
+          const updatedClasses = s.project.classes.map((c) => 
+            targetClassIds.includes(c.id) ? { ...c, status } : c
+          );
+
+          const filteredAssignments = s.project.assignments.filter((a) => !targetClassIds.includes(a.classId));
+          const copiedAssignments: Assignment[] = [];
+
+          targetClassIds.forEach((tClassId) => {
+            sourceAssignments.forEach((srcA) => {
+              copiedAssignments.push({
+                classId: tClassId,
+                subjectId: srcA.subjectId,
+                teacherId: srcA.teacherId,
+                periodsPerWeek: srcA.periodsPerWeek,
+              });
+            });
+          });
+
+          return {
+            project: {
+              ...s.project,
+              classes: updatedClasses,
+              assignments: [...filteredAssignments, ...copiedAssignments],
+              updatedAt: Date.now(),
+            },
+            isDirty: true,
+          };
+        });
+
+        get().persistToDatabase();
+        get().addToast(`Copied setup to ${targetClassIds.length} classes!`, 'success');
+      },
+
       addSubject: (subData) => {
         const id = `sub-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
         set((state) => ({
@@ -478,14 +585,16 @@ export const useTimetableStore = create<TimetableState>()(
 
       addCommonSubjects: () => {
         const commonPresets: Omit<Subject, 'id'>[] = [
-          { name: 'English Literature', code: 'ENG', color: '#10b981', type: 'theory', doublePeriod: false, maxPerDay: 2, preferMorning: false },
-          { name: 'Mathematics', code: 'MATH', color: '#f97316', type: 'theory', doublePeriod: false, maxPerDay: 2, preferMorning: true },
-          { name: 'Science', code: 'SCI', color: '#06b6d4', type: 'theory', doublePeriod: false, maxPerDay: 2, preferMorning: true },
-          { name: 'Social Studies', code: 'SOC', color: '#eab308', type: 'theory', doublePeriod: false, maxPerDay: 1, preferMorning: false },
-          { name: 'Computer Science', code: 'CS', color: '#6366f1', type: 'lab', doublePeriod: true, maxPerDay: 2, preferMorning: false },
-          { name: 'Second Language (Hindi/Regional)', code: 'LANG', color: '#8b5cf6', type: 'theory', doublePeriod: false, maxPerDay: 2, preferMorning: false },
-          { name: 'Physical Education', code: 'PE', color: '#ef4444', type: 'sports', doublePeriod: false, maxPerDay: 1, preferMorning: false },
-          { name: 'Visual Arts & Craft', code: 'ART', color: '#ec4899', type: 'activity', doublePeriod: false, maxPerDay: 1, preferMorning: false },
+          { name: 'English', code: 'ENG', color: '#10b981', type: 'theory', defaultPeriodsPerWeek: 5, doublePeriod: false, maxPerDay: 2, preferMorning: false },
+          { name: 'Mathematics', code: 'MATH', color: '#f97316', type: 'theory', defaultPeriodsPerWeek: 6, doublePeriod: false, maxPerDay: 2, preferMorning: true },
+          { name: 'Science', code: 'SCI', color: '#06b6d4', type: 'theory', defaultPeriodsPerWeek: 5, doublePeriod: false, maxPerDay: 2, preferMorning: true },
+          { name: 'Social Studies', code: 'SOC', color: '#eab308', type: 'theory', defaultPeriodsPerWeek: 4, doublePeriod: false, maxPerDay: 1, preferMorning: false },
+          { name: 'Tamil', code: 'TAM', color: '#f43f5e', type: 'theory', defaultPeriodsPerWeek: 4, doublePeriod: false, maxPerDay: 1, preferMorning: false },
+          { name: 'Hindi', code: 'HIN', color: '#8b5cf6', type: 'theory', defaultPeriodsPerWeek: 4, doublePeriod: false, maxPerDay: 1, preferMorning: false },
+          { name: 'Computer', code: 'CS', color: '#6366f1', type: 'lab', defaultPeriodsPerWeek: 3, doublePeriod: true, maxPerDay: 2, preferMorning: false },
+          { name: 'Physical Education (PT)', code: 'PT', color: '#ef4444', type: 'sports', defaultPeriodsPerWeek: 2, doublePeriod: false, maxPerDay: 1, preferMorning: false },
+          { name: 'Art & Craft', code: 'ART', color: '#ec4899', type: 'activity', defaultPeriodsPerWeek: 2, doublePeriod: false, maxPerDay: 1, preferMorning: false },
+          { name: 'Library', code: 'LIB', color: '#3b82f6', type: 'activity', defaultPeriodsPerWeek: 1, doublePeriod: false, maxPerDay: 1, preferMorning: false },
         ];
         const existingCodes = new Set(get().project.subjects.map((s) => s.code));
         const toAdd = commonPresets

@@ -16,9 +16,10 @@ import {
   HelpCircle,
   Calendar,
   Clock,
-  CalendarDays
+  CalendarDays,
+  BookOpen
 } from 'lucide-react';
-import { Teacher, ID, DayPeriod, Slot } from '../types';
+import { Teacher, ID, DayPeriod, Slot, Subject } from '../types';
 
 export const StaffPage: React.FC = () => {
   const { 
@@ -32,6 +33,8 @@ export const StaffPage: React.FC = () => {
     blockTeacherWholePeriod,
     unblockTeacherAll,
     checkEntityDependencies,
+    addSubject,
+    setCurrentRoute,
     addToast 
   } = useTimetableStore();
 
@@ -43,6 +46,16 @@ export const StaffPage: React.FC = () => {
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
+  const [subjectFilter, setSubjectFilter] = useState<string>('all');
+
+  // Quick Subject Modal State
+  const [isQuickSubjectModalOpen, setIsQuickSubjectModalOpen] = useState(false);
+  const [quickSubName, setQuickSubName] = useState('');
+  const [quickSubCode, setQuickSubCode] = useState('');
+  const [quickSubType, setQuickSubType] = useState<Subject['type']>('theory');
+  const [quickSubColor, setQuickSubColor] = useState('#f97316');
+  const [quickSubPeriods, setQuickSubPeriods] = useState(5);
+  const [quickSubError, setQuickSubError] = useState<string | null>(null);
 
   // Form State: Add Teacher
   const [name, setName] = useState('');
@@ -130,9 +143,11 @@ export const StaffPage: React.FC = () => {
         t.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (t.employeeId && t.employeeId.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      return matchSearch;
+      if (!matchSearch) return false;
+      if (subjectFilter !== 'all' && !t.subjectIds.includes(subjectFilter)) return false;
+      return true;
     });
-  }, [teachers, searchQuery]);
+  }, [teachers, searchQuery, subjectFilter]);
 
   // Handle Add Teacher
   const handleAddSubmit = (e: React.FormEvent) => {
@@ -152,8 +167,9 @@ export const StaffPage: React.FC = () => {
       return;
     }
 
-    if (selectedSubjects.length === 0 && subjects.length > 0) {
-      addToast('Note: No subjects were selected for this teacher. You can assign subjects later.', 'warning');
+    if (selectedSubjects.length === 0) {
+      setFormError('Please select at least one subject handled by this faculty member.');
+      return;
     }
 
     setFormError(null);
@@ -180,6 +196,37 @@ export const StaffPage: React.FC = () => {
     setSelectedSubjects([]);
     setSelectedClasses([]);
     setPreferredOffDay(undefined);
+  };
+
+  const handleCreateQuickSubject = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickSubName.trim() || !quickSubCode.trim()) {
+      setQuickSubError('Subject name and code are required.');
+      return;
+    }
+    const norm = quickSubCode.trim().toUpperCase();
+    if (subjects.some(s => s.code.toUpperCase() === norm)) {
+      setQuickSubError(`Code "${norm}" is already used.`);
+      return;
+    }
+    const newId = `sub-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    addSubject({
+      name: quickSubName.trim(),
+      code: norm,
+      type: quickSubType,
+      color: quickSubColor,
+      defaultPeriodsPerWeek: quickSubPeriods || 5,
+      doublePeriod: quickSubType === 'lab',
+      preferMorning: false,
+      maxPerDay: 2,
+    });
+    // Auto-select newly created subject for this teacher
+    setSelectedSubjects(prev => [...prev, newId]);
+    setIsQuickSubjectModalOpen(false);
+    setQuickSubName('');
+    setQuickSubCode('');
+    setQuickSubError(null);
+    addToast(`Added subject ${norm} and selected it for faculty!`, 'success');
   };
 
   // Open Edit Modal
@@ -216,6 +263,11 @@ export const StaffPage: React.FC = () => {
     const isDup = teachers.some(t => t.id !== editingTeacher.id && t.code.toUpperCase() === normCode);
     if (isDup) {
       setEditError(`Code "${normCode}" is already in use by another teacher.`);
+      return;
+    }
+
+    if (editSubjects.length === 0) {
+      setEditError('Please select at least one subject handled by this faculty member.');
       return;
     }
 
@@ -362,6 +414,37 @@ export const StaffPage: React.FC = () => {
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  if (subjects.length === 0) {
+    return (
+      <div className="max-w-2xl mx-auto py-16 px-4 animate-fadeIn">
+        <PlasmaGlass glow className="p-8 sm:p-10 text-center space-y-5 border-amber-500/40">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 mx-auto shadow-ember-glow">
+            <BookOpen className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-white">Add Subjects First (Step 1)</h2>
+            <p className="text-xs text-slate-300 leading-relaxed max-w-md mx-auto">
+              Faculty members must be assigned the specific subjects they are qualified to teach. Please configure your school&apos;s curriculum catalog in Subjects before registering teaching staff.
+            </p>
+          </div>
+          <div className="pt-2 flex justify-center">
+            <MoltenButton
+              variant="molten"
+              size="md"
+              onClick={() => {
+                sessionStorage.setItem('chronoforge_return_route', 'staff');
+                setCurrentRoute('subjects');
+              }}
+              leftIcon={<BookOpen className="w-4 h-4" />}
+            >
+              Go to Step 1: Subjects Catalog
+            </MoltenButton>
+          </div>
+        </PlasmaGlass>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-fadeIn">
       {/* Header */}
@@ -469,21 +552,30 @@ export const StaffPage: React.FC = () => {
           <div className="pt-2 border-t border-white/5 space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-semibold text-slate-400">
-                Subjects Handled ({selectedSubjects.length}/{subjects.length} selected)
+                Subjects Handled * ({selectedSubjects.length}/{subjects.length} selected)
               </label>
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedSubjects.length === subjects.length) {
-                    setSelectedSubjects([]);
-                  } else {
-                    setSelectedSubjects(subjects.map(s => s.id));
-                  }
-                }}
-                className="text-[10px] text-amber-300 hover:text-white"
-              >
-                {selectedSubjects.length === subjects.length ? 'Deselect All' : 'Select All Subjects'}
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsQuickSubjectModalOpen(true)}
+                  className="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 underline underline-offset-2"
+                >
+                  <Plus className="w-3 h-3" /> Add new subject
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedSubjects.length === subjects.length) {
+                      setSelectedSubjects([]);
+                    } else {
+                      setSelectedSubjects(subjects.map(s => s.id));
+                    }
+                  }}
+                  className="text-[10px] text-slate-300 hover:text-white"
+                >
+                  {selectedSubjects.length === subjects.length ? 'Deselect All' : 'Select All Subjects'}
+                </button>
+              </div>
             </div>
 
             {subjects.length === 0 ? (
@@ -572,9 +664,21 @@ export const StaffPage: React.FC = () => {
         </form>
       </PlasmaGlass>
 
-      {/* Controls: Search & Bulk Actions */}
+      {/* Controls: Search, Subject Filter & Bulk Actions */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Subject Filter Dropdown */}
+          <select
+            value={subjectFilter}
+            onChange={(e) => setSubjectFilter(e.target.value)}
+            className="px-3 py-1.5 rounded-xl bg-[#161224] border border-white/10 text-white text-xs focus:outline-none focus:border-amber-400"
+          >
+            <option value="all">Filter: All Subjects</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+            ))}
+          </select>
+
           {selectedTeacherIds.length > 0 && (
             <MoltenButton
               size="sm"
@@ -1097,6 +1201,100 @@ export const StaffPage: React.FC = () => {
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      {/* Quick Add Subject Modal */}
+      <Modal
+        isOpen={isQuickSubjectModalOpen}
+        onClose={() => { setIsQuickSubjectModalOpen(false); setQuickSubError(null); }}
+        title="Quick Add Subject"
+        subtitle="Add a missing subject directly and assign it to faculty"
+        icon={<BookOpen className="w-5 h-5 text-amber-400" />}
+        maxWidth="md"
+      >
+        <form onSubmit={handleCreateQuickSubject} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Subject Name *</label>
+            <input
+              type="text"
+              value={quickSubName}
+              onChange={(e) => {
+                setQuickSubName(e.target.value);
+                setQuickSubError(null);
+                if (!quickSubCode) {
+                  setQuickSubCode(e.target.value.trim().slice(0, 4).toUpperCase());
+                }
+              }}
+              placeholder="e.g. Economics"
+              className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Code * (Short)</label>
+              <input
+                type="text"
+                value={quickSubCode}
+                onChange={(e) => { setQuickSubCode(e.target.value); setQuickSubError(null); }}
+                placeholder="e.g. ECO"
+                className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm uppercase font-mono-code focus:outline-none focus:border-amber-400"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Type</label>
+              <select
+                value={quickSubType}
+                onChange={(e) => setQuickSubType(e.target.value as Subject['type'])}
+                className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400 capitalize"
+              >
+                <option value="theory">Theory</option>
+                <option value="lab">Lab / Practical</option>
+                <option value="sports">Sports</option>
+                <option value="activity">Activity</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Default Periods/Wk</label>
+              <input
+                type="number"
+                min={1}
+                max={15}
+                value={quickSubPeriods}
+                onChange={(e) => setQuickSubPeriods(parseInt(e.target.value, 10) || 5)}
+                className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-mono-code focus:outline-none focus:border-amber-400"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Tag Color</label>
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="color"
+                  value={quickSubColor}
+                  onChange={(e) => setQuickSubColor(e.target.value)}
+                  className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
+                />
+                <span className="text-xs text-slate-400 font-mono-code">{quickSubColor}</span>
+              </div>
+            </div>
+          </div>
+
+          {quickSubError && (
+            <p className="text-xs text-red-400 font-medium">{quickSubError}</p>
+          )}
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+            <MoltenButton type="button" size="sm" variant="ghost" onClick={() => setIsQuickSubjectModalOpen(false)}>
+              Cancel
+            </MoltenButton>
+            <MoltenButton type="submit" size="sm" variant="molten">
+              Create &amp; Select Subject
+            </MoltenButton>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
