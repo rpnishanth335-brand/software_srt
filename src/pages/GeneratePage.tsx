@@ -486,11 +486,11 @@ export const GeneratePage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setCurrentRoute(issue.targetRoute)}
-                  className="shrink-0 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/15 transition-colors self-start sm:self-auto flex items-center gap-1.5"
+                  className="shrink-0 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/15 transition-colors self-start sm:self-auto flex items-center gap-1.5 whitespace-nowrap"
                 >
-                  <Wrench className="w-3 h-3 text-amber-300" />
-                  <span>{issue.actionLabel}</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <Wrench className="w-3 h-3 text-amber-300 shrink-0" />
+                  <span className="whitespace-nowrap">{issue.actionLabel}</span>
+                  <ArrowRight className="w-3 h-3 shrink-0" />
                 </button>
               </div>
             ))}

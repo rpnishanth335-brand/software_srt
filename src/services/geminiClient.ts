@@ -39,6 +39,7 @@ export async function testGeminiConnection(
     let url: string;
     let headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'x-goog-api-key': cleanKey,
     };
     let body: any;
 
@@ -50,17 +51,13 @@ export async function testGeminiConnection(
         model,
       });
     } else {
-      url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`;
+      url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:countTokens?key=${encodeURIComponent(cleanKey)}`;
       body = JSON.stringify({
         contents: [
           {
-            parts: [{ text: 'Respond with exactly: OK' }],
+            parts: [{ text: 'test' }],
           },
         ],
-        generationConfig: {
-          maxOutputTokens: 10,
-          temperature: 0.1,
-        },
       });
     }
 
@@ -131,6 +128,7 @@ export async function callGeminiStructured<T>(
   let url: string;
   let headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'x-goog-api-key': cleanKey,
   };
   let bodyPayload: any;
 
@@ -146,7 +144,7 @@ export async function callGeminiStructured<T>(
       responseSchema: options.responseSchema,
     };
   } else {
-    url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`;
+    url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(cleanKey)}`;
     bodyPayload = {
       contents: [
         {

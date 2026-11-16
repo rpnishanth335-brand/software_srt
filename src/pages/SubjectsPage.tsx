@@ -381,8 +381,8 @@ export const SubjectsPage: React.FC = () => {
             <Plus className="w-3.5 h-3.5 text-ember-400" /> Register New Subject
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-            <div className="sm:col-span-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
+            <div>
               <label className="block text-[11px] font-semibold text-slate-400 mb-1">Subject Name *</label>
               <input
                 type="text"
@@ -393,7 +393,7 @@ export const SubjectsPage: React.FC = () => {
               />
             </div>
 
-            <div className="sm:col-span-2">
+            <div>
               <label className="block text-[11px] font-semibold text-slate-400 mb-1">Code * (Short)</label>
               <input
                 type="text"
@@ -404,7 +404,7 @@ export const SubjectsPage: React.FC = () => {
               />
             </div>
 
-            <div className="sm:col-span-2">
+            <div>
               <label className="block text-[11px] font-semibold text-slate-400 mb-1">Type</label>
               <select
                 value={type}
@@ -418,7 +418,7 @@ export const SubjectsPage: React.FC = () => {
               </select>
             </div>
 
-            <div className="sm:col-span-2">
+            <div>
               <label className="block text-[11px] font-semibold text-slate-400 mb-1">Default Periods/Wk *</label>
               <input
                 type="number"
@@ -431,16 +431,16 @@ export const SubjectsPage: React.FC = () => {
               />
             </div>
 
-            <div className="sm:col-span-2">
+            <div>
               <label className="block text-[11px] font-semibold text-slate-400 mb-1">Tag Color</label>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 h-[38px]">
                 <input
                   type="color"
                   value={color}
                   onChange={(e) => setColor(e.target.value)}
-                  className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
+                  className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0 shrink-0"
                 />
-                <div className="flex items-center gap-1 overflow-x-auto">
+                <div className="flex items-center gap-1 overflow-x-auto py-1">
                   {PRESET_COLORS.slice(0, 5).map((pc) => (
                     <button
                       key={pc}
@@ -453,15 +453,16 @@ export const SubjectsPage: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="sm:col-span-3 flex items-center gap-2">
-              <MoltenButton type="submit" size="md" variant="molten" className="flex-1 justify-center">
-                Add Subject
-              </MoltenButton>
-              <MoltenButton type="button" size="md" variant="glass" onClick={handleAddAnother} className="px-3">
-                Add Another
-              </MoltenButton>
-            </div>
+          {/* Action buttons row with content-based sizing */}
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <MoltenButton type="submit" size="md" variant="molten" className="px-5">
+              Add Subject
+            </MoltenButton>
+            <MoltenButton type="button" size="md" variant="glass" onClick={handleAddAnother} className="px-4">
+              Add Another
+            </MoltenButton>
           </div>
 
           {/* Flags row */}

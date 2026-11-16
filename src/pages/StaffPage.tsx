@@ -152,24 +152,33 @@ export const StaffPage: React.FC = () => {
   // Handle Add Teacher
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    return submitTeacherForm();
+  };
+
+  const handleAddAnother = (e: React.MouseEvent) => {
+    e.preventDefault();
+    submitTeacherForm();
+  };
+
+  const submitTeacherForm = (): boolean => {
     if (!name.trim()) {
       setFormError('Teacher full name is required');
-      return;
+      return false;
     }
     if (!code.trim()) {
       setFormError('Teacher code is required (e.g. JS)');
-      return;
+      return false;
     }
 
     const normCode = code.trim().toUpperCase();
     if (teachers.some(t => t.code.toUpperCase() === normCode)) {
       setFormError(`Teacher code "${normCode}" is already assigned.`);
-      return;
+      return false;
     }
 
     if (selectedSubjects.length === 0) {
       setFormError('Please select at least one subject handled by this faculty member.');
-      return;
+      return false;
     }
 
     setFormError(null);
@@ -196,6 +205,7 @@ export const StaffPage: React.FC = () => {
     setSelectedSubjects([]);
     setSelectedClasses([]);
     setPreferredOffDay(undefined);
+    return true;
   };
 
   const handleCreateQuickSubject = (e: React.FormEvent) => {
@@ -496,8 +506,8 @@ export const StaffPage: React.FC = () => {
             <Plus className="w-3.5 h-3.5 text-ember-400" /> Add New Faculty Member
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-            <div className="sm:col-span-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
+            <div>
               <label className="block text-[11px] font-semibold text-slate-400 mb-1">Full Name *</label>
               <input
                 type="text"
@@ -508,7 +518,7 @@ export const StaffPage: React.FC = () => {
               />
             </div>
 
-            <div className="sm:col-span-2">
+            <div>
               <label className="block text-[11px] font-semibold text-slate-400 mb-1">Code * (Short)</label>
               <input
                 type="text"
@@ -519,7 +529,7 @@ export const StaffPage: React.FC = () => {
               />
             </div>
 
-            <div className="sm:col-span-2">
+            <div>
               <label className="block text-[11px] font-semibold text-slate-400 mb-1">Employee ID</label>
               <input
                 type="text"
@@ -530,7 +540,7 @@ export const StaffPage: React.FC = () => {
               />
             </div>
 
-            <div className="sm:col-span-3">
+            <div>
               <label className="block text-[11px] font-semibold text-slate-400 mb-1">Email / Phone</label>
               <input
                 type="text"
@@ -539,12 +549,6 @@ export const StaffPage: React.FC = () => {
                 placeholder="jane.doe@school.edu"
                 className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-ember-500"
               />
-            </div>
-
-            <div className="sm:col-span-2">
-              <MoltenButton type="submit" size="md" variant="molten" className="w-full justify-center">
-                Add Faculty
-              </MoltenButton>
             </div>
           </div>
 
@@ -661,6 +665,16 @@ export const StaffPage: React.FC = () => {
           {formError && (
             <p className="text-xs text-red-400 font-medium animate-fadeIn">{formError}</p>
           )}
+
+          {/* Action buttons row with content-based sizing */}
+          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-white/5">
+            <MoltenButton type="submit" size="md" variant="molten" className="px-5">
+              Add Faculty
+            </MoltenButton>
+            <MoltenButton type="button" size="md" variant="glass" onClick={handleAddAnother} className="px-4">
+              Add Another
+            </MoltenButton>
+          </div>
         </form>
       </PlasmaGlass>
 

@@ -306,21 +306,21 @@ export const ExportPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <MoltenButton
               size="md"
               variant="glass"
               onClick={handleBackupExport}
               leftIcon={<Download className="w-4 h-4 text-purple-400" />}
-              className="justify-center"
+              className="justify-center whitespace-nowrap"
             >
               Export JSON
             </MoltenButton>
 
             <label className="cursor-pointer">
               <input type="file" accept=".json" onChange={handleImportBackup} className="hidden" />
-              <span className="w-full h-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors">
-                <Upload className="w-4 h-4" /> Restore JSON
+              <span className="w-full h-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors whitespace-nowrap">
+                <Upload className="w-4 h-4 shrink-0" /> Restore JSON
               </span>
             </label>
           </div>

@@ -31,10 +31,10 @@ export const MoltenButton: React.FC<MoltenButtonProps> = ({
   ...props
 }) => {
   const sizeStyles = {
-    sm: "px-3.5 py-1.5 text-xs font-semibold rounded-lg gap-1.5",
-    md: "px-5 py-2.5 text-sm font-semibold rounded-xl gap-2",
-    lg: "px-7 py-3.5 text-base font-bold rounded-2xl gap-2.5",
-    forge: "px-8 py-4 text-lg font-extrabold tracking-wide rounded-2xl gap-3 shadow-ember-glow-lg",
+    sm: "px-3.5 py-1.5 text-xs font-semibold rounded-lg gap-1.5 min-h-[32px] min-w-fit",
+    md: "px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl gap-2 min-h-[38px] min-w-fit",
+    lg: "px-6 py-2.5 text-sm sm:text-base font-bold rounded-2xl gap-2.5 min-h-[44px] min-w-fit",
+    forge: "px-7 py-3 text-base sm:text-lg font-extrabold tracking-wide rounded-2xl gap-3 shadow-ember-glow-lg min-h-[50px] min-w-fit",
   };
 
   const variantStyles = {
@@ -53,7 +53,7 @@ export const MoltenButton: React.FC<MoltenButtonProps> = ({
       disabled={disabled || isLoading}
       className={twMerge(
         clsx(
-          "relative inline-flex items-center justify-center font-medium overflow-hidden select-none outline-none transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none",
+          "relative inline-flex items-center justify-center font-medium overflow-hidden select-none outline-none transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none whitespace-nowrap shrink-0 max-w-full",
           sizeStyles[size],
           variantStyles[variant],
           isForge && "animate-ember-flicker ring-2 ring-ember-400/60",
@@ -77,18 +77,18 @@ export const MoltenButton: React.FC<MoltenButtonProps> = ({
       )}
 
       {/* Button Content */}
-      <span className="relative z-10 inline-flex items-center gap-2">
+      <span className="relative z-10 inline-flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap max-w-full">
         {isLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin text-amber-200" />
+          <Loader2 className="w-4 h-4 animate-spin text-amber-200 shrink-0" />
         ) : isForge ? (
-          <Flame className="w-5 h-5 text-amber-200 animate-bounce" />
+          <Flame className="w-5 h-5 text-amber-200 animate-bounce shrink-0" />
         ) : (
-          leftIcon
+          leftIcon && <span className="shrink-0 inline-flex items-center">{leftIcon}</span>
         )}
 
-        <span>{children}</span>
+        <span className="whitespace-nowrap inline-block">{children}</span>
 
-        {!isLoading && rightIcon}
+        {!isLoading && rightIcon && <span className="shrink-0 inline-flex items-center">{rightIcon}</span>}
       </span>
     </motion.button>
   );

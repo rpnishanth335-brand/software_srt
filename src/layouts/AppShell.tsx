@@ -254,34 +254,38 @@ export const AppShell: React.FC<AppShellProps> = ({
               <span className="font-mono-code font-bold text-amber-300">{completenessPct}%</span>
             </div>
             
-            <div className="grid grid-cols-4 gap-1 text-center text-[10px] font-mono-code font-bold">
+            <div className="grid grid-cols-2 gap-1.5 font-mono-code font-bold">
               <button 
                 onClick={() => handleNavClick('subjects')}
-                className={`py-1 rounded-md transition-all ${hasSubjects ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                className={`py-1.5 px-2 rounded-lg transition-all flex items-center justify-between text-[11px] ${hasSubjects ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
                 title="1. Subjects"
               >
-                1. Sub ({subjects.length})
+                <span>1. Sub</span>
+                <span className="font-bold opacity-80">{subjects.length}</span>
               </button>
               <button 
                 onClick={() => handleNavClick('staff')}
-                className={`py-1 rounded-md transition-all ${hasStaff ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                className={`py-1.5 px-2 rounded-lg transition-all flex items-center justify-between text-[11px] ${hasStaff ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
                 title="2. Staff"
               >
-                2. Stf ({teachers.length})
+                <span>2. Staff</span>
+                <span className="font-bold opacity-80">{teachers.length}</span>
               </button>
               <button 
                 onClick={() => handleNavClick('classes')}
-                className={`py-1 rounded-md transition-all ${hasClasses ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                className={`py-1.5 px-2 rounded-lg transition-all flex items-center justify-between text-[11px] ${hasClasses ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
                 title="3. Classes"
               >
-                3. Cls ({classes.length})
+                <span>3. Class</span>
+                <span className="font-bold opacity-80">{classes.length}</span>
               </button>
               <button 
                 onClick={() => handleNavClick('generate')}
-                className={`py-1 rounded-md transition-all ${readyToGenerate ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse' : 'bg-white/5 text-slate-500 hover:bg-white/10'}`}
+                className={`py-1.5 px-2 rounded-lg transition-all flex items-center justify-between text-[11px] ${readyToGenerate ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse' : 'bg-white/5 text-slate-500 hover:bg-white/10'}`}
                 title="4. Generator"
               >
-                4. {readyToGenerate ? 'Ready' : 'Gen'}
+                <span>4. Forge</span>
+                <span className="text-[10px] uppercase font-bold">{readyToGenerate ? 'Ready' : 'Setup'}</span>
               </button>
             </div>
           </div>

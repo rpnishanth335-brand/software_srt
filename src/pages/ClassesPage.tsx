@@ -860,13 +860,13 @@ export const ClassesPage: React.FC = () => {
                   return (
                     <div
                       key={row.subjectId}
-                      className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                      className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl border transition-all ${
                         row.selected
                           ? 'bg-white/5 border-amber-500/40'
                           : 'bg-black/20 border-white/5 opacity-60'
                       }`}
                     >
-                      <label className="flex items-center gap-3 cursor-pointer select-none">
+                      <label className="flex items-center gap-2.5 cursor-pointer select-none min-w-0">
                         <input
                           type="checkbox"
                           checked={row.selected}
@@ -877,17 +877,17 @@ export const ClassesPage: React.FC = () => {
                               )
                             );
                           }}
-                          className="rounded border-white/20 bg-black/40 text-amber-500 focus:ring-0"
+                          className="rounded border-white/20 bg-black/40 text-amber-500 focus:ring-0 shrink-0"
                         />
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: subObj.color }} />
-                        <div>
-                          <div className="text-xs font-bold text-white">{subObj.name}</div>
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: subObj.color }} />
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-white truncate">{subObj.name}</div>
                           <div className="text-[10px] text-amber-300 font-mono-code font-semibold">{subObj.code} • {subObj.type}</div>
                         </div>
                       </label>
 
                       {row.selected && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-white/5">
                           <span className="text-[11px] text-slate-400">Periods/week:</span>
                           <div className="flex items-center gap-1">
                             <button
@@ -1041,7 +1041,7 @@ export const ClassesPage: React.FC = () => {
 
                         {/* If NO qualified staff exist */}
                         {qualifiedStaff.length === 0 ? (
-                          <div className="flex items-center justify-between p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-xs">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs">
                             <span className="text-red-300">
                               ⚠️ No staff handles {subObj.name}.
                             </span>
@@ -1053,7 +1053,7 @@ export const ClassesPage: React.FC = () => {
                                 setQuickStaffCode(subObj.code + 'T');
                                 setQuickStaffError(null);
                               }}
-                              className="px-2 py-1 rounded bg-amber-500 text-black font-bold text-[11px] hover:bg-amber-400"
+                              className="px-2.5 py-1 rounded bg-amber-500 text-black font-bold text-[11px] hover:bg-amber-400 whitespace-nowrap shrink-0 self-start sm:self-auto"
                             >
                               + Create staff for this subject
                             </button>
@@ -1085,14 +1085,14 @@ export const ClassesPage: React.FC = () => {
 
                             {wouldExceed && (
                               <p className="text-[11px] text-amber-400 font-medium mt-1 flex items-center gap-1">
-                                <AlertTriangle className="w-3 h-3" />
-                                Workload note: {assignedTeacher?.name} will be at {currentLoad + row.periodsPerWeek}/{assignedTeacher?.maxPerWeek} periods (over limit).
+                                <AlertTriangle className="w-3 h-3 shrink-0" />
+                                <span>Workload note: {assignedTeacher?.name} will be at {currentLoad + row.periodsPerWeek}/{assignedTeacher?.maxPerWeek} periods (over limit).</span>
                               </p>
                             )}
                           </div>
                         ) : (
                           // Split 2 Teachers
-                          <div className="grid grid-cols-2 gap-3 pt-1">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                             <div>
                               <label className="text-[10px] text-slate-400 mb-0.5 block">Staff 1 &amp; Periods</label>
                               <div className="flex items-center gap-1.5">
