@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { 
-  DndContext, 
-  DragEndEvent, 
-  PointerSensor, 
-  useSensor, 
-  useSensors 
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors
 } from '@dnd-kit/core';
 import { useTimetableStore } from '../store/useTimetableStore';
 import { TimetableGridClass } from '../components/timetable/TimetableGridClass';
@@ -12,39 +12,41 @@ import { TimetableGridTeacher } from '../components/timetable/TimetableGridTeach
 import { TimetableGridMaster } from '../components/timetable/TimetableGridMaster';
 import { VersionHistoryModal } from '../components/timetable/VersionHistoryModal';
 import { MobileDayTimetable } from '../components/timetable/MobileDayTimetable';
+import { CalculationReport } from '../components/timetable/CalculationReport';
 import { PlasmaGlass } from '../components/PlasmaGlass';
 import { MoltenButton } from '../components/MoltenButton';
-import { 
-  GraduationCap, 
-  Users, 
-  Grid3X3, 
-  Undo2, 
-  Redo2, 
-  History, 
-  Download, 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  GraduationCap,
+  Users,
+  Grid3X3,
+  Undo2,
+  Redo2,
+  History,
+  Download,
+  ChevronLeft,
+  ChevronRight,
   AlertTriangle,
   CalendarDays,
-  Flame
+  Flame,
+  BarChart3
 } from 'lucide-react';
 import { TimetableVersion, Slot } from '../types';
 
 export const ViewerPage: React.FC = () => {
-  const { 
-    project, 
-    activeTab, 
-    setActiveTab, 
-    selectedClassId, 
-    setSelectedClassId, 
-    selectedTeacherId, 
-    setSelectedTeacherId, 
-    moveOrSwapSlot, 
-    toggleLockSlot, 
-    undo, 
-    redo, 
-    undoStack, 
-    redoStack, 
+  const {
+    project,
+    activeTab,
+    setActiveTab,
+    selectedClassId,
+    setSelectedClassId,
+    selectedTeacherId,
+    setSelectedTeacherId,
+    moveOrSwapSlot,
+    toggleLockSlot,
+    undo,
+    redo,
+    undoStack,
+    redoStack,
     setCurrentRoute,
     setTimetableVersion,
     addToast
@@ -188,9 +190,8 @@ export const ViewerPage: React.FC = () => {
             <button
               onClick={undo}
               disabled={undoStack.length === 0}
-              className={`p-1.5 rounded-lg transition-colors ${
-                undoStack.length > 0 ? 'text-white hover:bg-white/10' : 'text-slate-600 cursor-not-allowed'
-              }`}
+              className={`p-1.5 rounded-lg transition-colors ${undoStack.length > 0 ? 'text-white hover:bg-white/10' : 'text-slate-600 cursor-not-allowed'
+                }`}
               title="Undo manual edit (Ctrl+Z)"
             >
               <Undo2 className="w-4 h-4" />
@@ -198,9 +199,8 @@ export const ViewerPage: React.FC = () => {
             <button
               onClick={redo}
               disabled={redoStack.length === 0}
-              className={`p-1.5 rounded-lg transition-colors ${
-                redoStack.length > 0 ? 'text-white hover:bg-white/10' : 'text-slate-600 cursor-not-allowed'
-              }`}
+              className={`p-1.5 rounded-lg transition-colors ${redoStack.length > 0 ? 'text-white hover:bg-white/10' : 'text-slate-600 cursor-not-allowed'
+                }`}
               title="Redo manual edit (Ctrl+Y)"
             >
               <Redo2 className="w-4 h-4" />
@@ -265,35 +265,42 @@ export const ViewerPage: React.FC = () => {
             <div className="flex items-center p-1 rounded-xl bg-white/5 border border-white/10 w-fit">
               <button
                 onClick={() => setActiveTab('byClass')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  activeTab === 'byClass'
-                    ? 'bg-amber-500 text-white shadow-ember-glow'
-                    : 'text-slate-400 hover:text-white'
-                }`}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'byClass'
+                  ? 'bg-amber-500 text-white shadow-ember-glow'
+                  : 'text-slate-400 hover:text-white'
+                  }`}
               >
                 <GraduationCap className="w-3.5 h-3.5" /> By Class
               </button>
 
               <button
                 onClick={() => setActiveTab('byTeacher')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  activeTab === 'byTeacher'
-                    ? 'bg-amber-500 text-white shadow-ember-glow'
-                    : 'text-slate-400 hover:text-white'
-                }`}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'byTeacher'
+                  ? 'bg-amber-500 text-white shadow-ember-glow'
+                  : 'text-slate-400 hover:text-white'
+                  }`}
               >
                 <Users className="w-3.5 h-3.5" /> By Teacher
               </button>
 
               <button
                 onClick={() => setActiveTab('master')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  activeTab === 'master'
-                    ? 'bg-amber-500 text-white shadow-ember-glow'
-                    : 'text-slate-400 hover:text-white'
-                }`}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'master'
+                  ? 'bg-amber-500 text-white shadow-ember-glow'
+                  : 'text-slate-400 hover:text-white'
+                  }`}
               >
                 <Grid3X3 className="w-3.5 h-3.5" /> Master Grid
+              </button>
+
+              <button
+                onClick={() => setActiveTab('calculations')}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'calculations'
+                  ? 'bg-amber-500 text-white shadow-ember-glow'
+                  : 'text-slate-400 hover:text-white'
+                  }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-ember-300" /> Calculation Report
               </button>
             </div>
 
@@ -362,39 +369,73 @@ export const ViewerPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setMobileViewMode('day')}
-                className={`px-2 py-1 rounded-lg font-semibold transition-all ${
-                  mobileViewMode === 'day' ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-400'
-                }`}
+                className={`px-2 py-1 rounded-lg font-semibold transition-all ${mobileViewMode === 'day' ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-400'
+                  }`}
               >
                 Day Focus
               </button>
               <button
                 type="button"
                 onClick={() => setMobileViewMode('week')}
-                className={`px-2 py-1 rounded-lg font-semibold transition-all ${
-                  mobileViewMode === 'week' ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-400'
-                }`}
+                className={`px-2 py-1 rounded-lg font-semibold transition-all ${mobileViewMode === 'week' ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-400'
+                  }`}
               >
                 Full Week
               </button>
             </div>
           </div>
 
-          {/* Mobile Single-Day Focused View (for phones when mobileViewMode is 'day') */}
-          <div className="block sm:hidden">
-            {mobileViewMode === 'day' && activeTab !== 'master' ? (
-              <MobileDayTimetable
-                project={project}
-                classId={activeTab === 'byClass' ? effectiveClassId : undefined}
-                teacherId={activeTab === 'byTeacher' ? effectiveTeacherId : undefined}
-                slots={currentSlots}
-                conflictSlotKeys={conflictSlotKeys}
-                conflictReasonMap={conflictReasonMap}
-                onToggleLock={activeTab === 'byClass' ? toggleLockSlot : undefined}
-              />
-            ) : (
-              <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-                <div className="overflow-x-auto">
+          {/* Calculation Report Tab Content */}
+          {activeTab === 'calculations' ? (
+            <CalculationReport />
+          ) : (
+            <>
+              {/* Mobile Single-Day Focused View (for phones when mobileViewMode is 'day') */}
+              <div className="block sm:hidden">
+                {mobileViewMode === 'day' && activeTab !== 'master' ? (
+                  <MobileDayTimetable
+                    project={project}
+                    classId={activeTab === 'byClass' ? effectiveClassId : undefined}
+                    teacherId={activeTab === 'byTeacher' ? effectiveTeacherId : undefined}
+                    slots={currentSlots}
+                    conflictSlotKeys={conflictSlotKeys}
+                    conflictReasonMap={conflictReasonMap}
+                    onToggleLock={activeTab === 'byClass' ? toggleLockSlot : undefined}
+                  />
+                ) : (
+                  <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+                    <div className="overflow-x-auto">
+                      {activeTab === 'byClass' && effectiveClassId && (
+                        <TimetableGridClass
+                          project={project}
+                          classId={effectiveClassId}
+                          slots={currentSlots}
+                          conflictSlotKeys={conflictSlotKeys}
+                          conflictReasonMap={conflictReasonMap}
+                          onToggleLock={toggleLockSlot}
+                        />
+                      )}
+                      {activeTab === 'byTeacher' && effectiveTeacherId && (
+                        <TimetableGridTeacher
+                          project={project}
+                          teacherId={effectiveTeacherId}
+                          slots={currentSlots}
+                        />
+                      )}
+                      {activeTab === 'master' && (
+                        <TimetableGridMaster
+                          project={project}
+                          slots={currentSlots}
+                        />
+                      )}
+                    </div>
+                  </DndContext>
+                )}
+              </div>
+
+              {/* Desktop & Tablet Full Week Drag-and-Drop Matrix (>= 640px) */}
+              <div className="hidden sm:block">
+                <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
                   {activeTab === 'byClass' && effectiveClassId && (
                     <TimetableGridClass
                       project={project}
@@ -405,6 +446,7 @@ export const ViewerPage: React.FC = () => {
                       onToggleLock={toggleLockSlot}
                     />
                   )}
+
                   {activeTab === 'byTeacher' && effectiveTeacherId && (
                     <TimetableGridTeacher
                       project={project}
@@ -412,47 +454,17 @@ export const ViewerPage: React.FC = () => {
                       slots={currentSlots}
                     />
                   )}
+
                   {activeTab === 'master' && (
                     <TimetableGridMaster
                       project={project}
                       slots={currentSlots}
                     />
                   )}
-                </div>
-              </DndContext>
-            )}
-          </div>
-
-          {/* Desktop & Tablet Full Week Drag-and-Drop Matrix (>= 640px) */}
-          <div className="hidden sm:block">
-            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-              {activeTab === 'byClass' && effectiveClassId && (
-                <TimetableGridClass
-                  project={project}
-                  classId={effectiveClassId}
-                  slots={currentSlots}
-                  conflictSlotKeys={conflictSlotKeys}
-                  conflictReasonMap={conflictReasonMap}
-                  onToggleLock={toggleLockSlot}
-                />
-              )}
-
-              {activeTab === 'byTeacher' && effectiveTeacherId && (
-                <TimetableGridTeacher
-                  project={project}
-                  teacherId={effectiveTeacherId}
-                  slots={currentSlots}
-                />
-              )}
-
-              {activeTab === 'master' && (
-                <TimetableGridMaster
-                  project={project}
-                  slots={currentSlots}
-                />
-              )}
-            </DndContext>
-          </div>
+                </DndContext>
+              </div>
+            </>
+          )}
         </>
       )}
 

@@ -3,18 +3,18 @@ import { useTimetableStore } from '../store/useTimetableStore';
 import { PlasmaGlass } from '../components/PlasmaGlass';
 import { MoltenButton } from '../components/MoltenButton';
 import { ReferentialWarningModal } from '../components/ReferentialWarningModal';
-import { 
-  BookOpen, 
-  Plus, 
-  Trash2, 
-  Copy, 
-  Edit2, 
-  Sparkles, 
-  Search, 
-  Download, 
-  Upload, 
+import { Modal } from '../components/ui/Modal';
+import {
+  BookOpen,
+  Plus,
+  Trash2,
+  Copy,
+  Edit2,
+  Sparkles,
+  Search,
+  Download,
+  Upload,
   HelpCircle,
-  X,
   Layers,
   Sun,
   FlaskConical
@@ -33,16 +33,16 @@ const PRESET_COLORS = [
 ];
 
 export const SubjectsPage: React.FC = () => {
-  const { 
-    project, 
-    addSubject, 
-    updateSubject, 
-    deleteSubject, 
-    duplicateSubject, 
-    bulkDeleteSubjects, 
-    addCommonSubjects, 
+  const {
+    project,
+    addSubject,
+    updateSubject,
+    deleteSubject,
+    duplicateSubject,
+    bulkDeleteSubjects,
+    addCommonSubjects,
     checkEntityDependencies,
-    addToast 
+    addToast
   } = useTimetableStore();
 
   const { subjects, rooms, teachers } = project;
@@ -106,7 +106,7 @@ export const SubjectsPage: React.FC = () => {
   // Filtered subjects
   const filteredSubjects = useMemo(() => {
     return subjects.filter((s) => {
-      const matchesSearch = 
+      const matchesSearch =
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.code.toLowerCase().includes(searchQuery.toLowerCase());
 
@@ -220,7 +220,7 @@ export const SubjectsPage: React.FC = () => {
 
   // Bulk Delete
   const toggleSelectRow = (id: ID) => {
-    setSelectedSubjectIds(prev => 
+    setSelectedSubjectIds(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
   };
@@ -502,11 +502,10 @@ export const SubjectsPage: React.FC = () => {
               <button
                 key={tf}
                 onClick={() => setTypeFilter(tf)}
-                className={`px-2.5 py-1 rounded-lg capitalize transition-colors ${
-                  typeFilter === tf
-                    ? 'bg-ember-500 text-white font-bold'
-                    : 'text-slate-400 hover:text-white'
-                }`}
+                className={`px-2.5 py-1 rounded-lg capitalize transition-colors ${typeFilter === tf
+                  ? 'bg-ember-500 text-white font-bold'
+                  : 'text-slate-400 hover:text-white'
+                  }`}
               >
                 {tf}
               </button>
@@ -666,128 +665,122 @@ export const SubjectsPage: React.FC = () => {
       )}
 
       {/* Edit Subject Modal */}
-      {editingSubject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <PlasmaGlass glow className="max-w-md w-full p-6 border-ember-500/40 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Edit2 className="w-4 h-4 text-ember-400" /> Edit Subject Details
-              </h3>
-              <button onClick={() => setEditingSubject(null)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
+      <Modal
+        isOpen={Boolean(editingSubject)}
+        onClose={() => setEditingSubject(null)}
+        maxWidth="md"
+        title="Edit Subject Details"
+        icon={<Edit2 className="w-4 h-4 text-ember-400" />}
+      >
+
+        <form onSubmit={handleSaveEdit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Subject Name *</label>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Code *</label>
+              <input
+                type="text"
+                value={editCode}
+                onChange={(e) => setEditCode(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400 uppercase font-mono-code"
+              />
             </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Type</label>
+              <select
+                value={editType}
+                onChange={(e) => setEditType(e.target.value as Subject['type'])}
+                className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400 capitalize"
+              >
+                <option value="theory">Theory</option>
+                <option value="lab">Lab / Practical</option>
+                <option value="sports">Sports</option>
+                <option value="activity">Activity / Arts</option>
+              </select>
+            </div>
+          </div>
 
-            <form onSubmit={handleSaveEdit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Subject Name *</label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Special Room</label>
+            <select
+              value={editSpecialRoomId}
+              onChange={(e) => setEditSpecialRoomId(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
+            >
+              <option value="">None Required</option>
+              {rooms.map((r) => (
+                <option key={r.id} value={r.id}>{r.name} ({r.code || r.number})</option>
+              ))}
+            </select>
+          </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Code *</label>
-                  <input
-                    type="text"
-                    value={editCode}
-                    onChange={(e) => setEditCode(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400 uppercase font-mono-code"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Type</label>
-                  <select
-                    value={editType}
-                    onChange={(e) => setEditType(e.target.value as Subject['type'])}
-                    className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400 capitalize"
-                  >
-                    <option value="theory">Theory</option>
-                    <option value="lab">Lab / Practical</option>
-                    <option value="sports">Sports</option>
-                    <option value="activity">Activity / Arts</option>
-                  </select>
-                </div>
-              </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              value={editColor}
+              onChange={(e) => setEditColor(e.target.value)}
+              className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
+            />
+            <span className="text-xs text-slate-300 font-mono-code">{editColor}</span>
+          </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Special Room</label>
-                <select
-                  value={editSpecialRoomId}
-                  onChange={(e) => setEditSpecialRoomId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
-                >
-                  <option value="">None Required</option>
-                  {rooms.map((r) => (
-                    <option key={r.id} value={r.id}>{r.name} ({r.code || r.number})</option>
-                  ))}
-                </select>
-              </div>
+          <div className="space-y-2 pt-2 border-t border-white/10 text-xs text-slate-300">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editDoublePeriod}
+                onChange={(e) => setEditDoublePeriod(e.target.checked)}
+                className="rounded border-white/20 bg-black/40 text-ember-500 focus:ring-0"
+              />
+              <span>Requires Double Period (consecutive)</span>
+            </label>
 
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={editColor}
-                  onChange={(e) => setEditColor(e.target.value)}
-                  className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0"
-                />
-                <span className="text-xs text-slate-300 font-mono-code">{editColor}</span>
-              </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editPreferMorning}
+                onChange={(e) => setEditPreferMorning(e.target.checked)}
+                className="rounded border-white/20 bg-black/40 text-ember-500 focus:ring-0"
+              />
+              <span>Prefer Morning Schedule</span>
+            </label>
 
-              <div className="space-y-2 pt-2 border-t border-white/10 text-xs text-slate-300">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editDoublePeriod}
-                    onChange={(e) => setEditDoublePeriod(e.target.checked)}
-                    className="rounded border-white/20 bg-black/40 text-ember-500 focus:ring-0"
-                  />
-                  <span>Requires Double Period (consecutive)</span>
-                </label>
+            <div className="flex items-center gap-2 pt-1">
+              <span>Max periods per day:</span>
+              <input
+                type="number"
+                min={1}
+                max={4}
+                value={editMaxPerDay}
+                onChange={(e) => setEditMaxPerDay(parseInt(e.target.value, 10) || 2)}
+                className="w-16 px-2 py-1 rounded bg-white/5 border border-white/10 text-white text-xs font-mono-code"
+              />
+            </div>
+          </div>
 
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editPreferMorning}
-                    onChange={(e) => setEditPreferMorning(e.target.checked)}
-                    className="rounded border-white/20 bg-black/40 text-ember-500 focus:ring-0"
-                  />
-                  <span>Prefer Morning Schedule</span>
-                </label>
+          {editError && (
+            <p className="text-xs text-red-400 font-medium">{editError}</p>
+          )}
 
-                <div className="flex items-center gap-2 pt-1">
-                  <span>Max periods per day:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={4}
-                    value={editMaxPerDay}
-                    onChange={(e) => setEditMaxPerDay(parseInt(e.target.value, 10) || 2)}
-                    className="w-16 px-2 py-1 rounded bg-white/5 border border-white/10 text-white text-xs font-mono-code"
-                  />
-                </div>
-              </div>
-
-              {editError && (
-                <p className="text-xs text-red-400 font-medium">{editError}</p>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
-                <MoltenButton type="button" size="sm" variant="ghost" onClick={() => setEditingSubject(null)}>
-                  Cancel
-                </MoltenButton>
-                <MoltenButton type="submit" size="sm" variant="molten">
-                  Save Changes
-                </MoltenButton>
-              </div>
-            </form>
-          </PlasmaGlass>
-        </div>
-      )}
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+            <MoltenButton type="button" size="sm" variant="ghost" onClick={() => setEditingSubject(null)}>
+              Cancel
+            </MoltenButton>
+            <MoltenButton type="submit" size="sm" variant="molten">
+              Save Changes
+            </MoltenButton>
+          </div>
+        </form>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
       <ReferentialWarningModal

@@ -24,7 +24,7 @@ export interface TimetableState {
   // Navigation & UI state
   currentRoute: AppRoute;
   activeStep: number; // 1 to 10 for guided wizard mode
-  activeTab: 'byClass' | 'byTeacher' | 'master';
+  activeTab: 'byClass' | 'byTeacher' | 'master' | 'calculations';
   selectedClassId: ID | null;
   selectedTeacherId: ID | null;
   
@@ -42,7 +42,7 @@ export interface TimetableState {
   // Actions
   setCurrentRoute: (route: AppRoute) => void;
   setStep: (step: number) => void;
-  setActiveTab: (tab: 'byClass' | 'byTeacher' | 'master') => void;
+  setActiveTab: (tab: 'byClass' | 'byTeacher' | 'master' | 'calculations') => void;
   setSelectedClassId: (id: ID | null) => void;
   setSelectedTeacherId: (id: ID | null) => void;
   

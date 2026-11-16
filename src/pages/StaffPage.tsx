@@ -3,6 +3,7 @@ import { useTimetableStore } from '../store/useTimetableStore';
 import { PlasmaGlass } from '../components/PlasmaGlass';
 import { MoltenButton } from '../components/MoltenButton';
 import { ReferentialWarningModal } from '../components/ReferentialWarningModal';
+import { Modal } from '../components/ui/Modal';
 import { 
   Users, 
   Plus, 
@@ -13,7 +14,6 @@ import {
   Download, 
   Upload, 
   HelpCircle,
-  X,
   Calendar,
   Clock,
   CalendarDays
@@ -739,17 +739,13 @@ export const StaffPage: React.FC = () => {
       )}
 
       {/* Edit Teacher Modal */}
-      {editingTeacher && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <PlasmaGlass glow className="max-w-lg w-full p-6 border-ember-500/40 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Edit2 className="w-4 h-4 text-ember-400" /> Edit Faculty Details
-              </h3>
-              <button onClick={() => setEditingTeacher(null)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={Boolean(editingTeacher)}
+        onClose={() => setEditingTeacher(null)}
+        maxWidth="lg"
+        title="Edit Faculty Details"
+        icon={<Edit2 className="w-4 h-4 text-ember-400" />}
+      >
 
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -870,26 +866,17 @@ export const StaffPage: React.FC = () => {
                 </MoltenButton>
               </div>
             </form>
-          </PlasmaGlass>
-        </div>
-      )}
+      </Modal>
 
       {/* Availability Grid Modal */}
-      {activeAvailabilityTeacher && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <PlasmaGlass glow className="max-w-2xl w-full p-6 border-amber-500/40 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-ember-400" />
-                  Availability &amp; Blocked Slots: {activeAvailabilityTeacher.name} ({activeAvailabilityTeacher.code})
-                </h3>
-                <p className="text-xs text-slate-400">Click any period box to block or unblock. Solver guarantees zero assignments in blocked slots.</p>
-              </div>
-              <button onClick={() => setActiveAvailabilityTeacher(null)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={Boolean(activeAvailabilityTeacher)}
+        onClose={() => setActiveAvailabilityTeacher(null)}
+        maxWidth="2xl"
+        title={activeAvailabilityTeacher ? `Availability & Blocked Slots: ${activeAvailabilityTeacher.name} (${activeAvailabilityTeacher.code})` : 'Availability'}
+        subtitle="Click any period box to block or unblock. Solver guarantees zero assignments in blocked slots."
+        icon={<Calendar className="w-4 h-4 text-ember-400" />}
+      >
 
             {/* Quick Bulk Shortcuts */}
             <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-black/30 border border-white/10 text-xs">
@@ -909,6 +896,7 @@ export const StaffPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
+                    if (!activeAvailabilityTeacher) return;
                     blockTeacherWholeDay(activeAvailabilityTeacher.id, blockDayChoice);
                     const updated = useTimetableStore.getState().project.teachers.find(t => t.id === activeAvailabilityTeacher.id);
                     if (updated) setActiveAvailabilityTeacher(updated);
@@ -933,6 +921,7 @@ export const StaffPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
+                    if (!activeAvailabilityTeacher) return;
                     blockTeacherWholePeriod(activeAvailabilityTeacher.id, blockPeriodChoice);
                     const updated = useTimetableStore.getState().project.teachers.find(t => t.id === activeAvailabilityTeacher.id);
                     if (updated) setActiveAvailabilityTeacher(updated);
@@ -947,6 +936,7 @@ export const StaffPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
+                  if (!activeAvailabilityTeacher) return;
                   unblockTeacherAll(activeAvailabilityTeacher.id);
                   const updated = useTimetableStore.getState().project.teachers.find(t => t.id === activeAvailabilityTeacher.id);
                   if (updated) setActiveAvailabilityTeacher(updated);
@@ -977,12 +967,16 @@ export const StaffPage: React.FC = () => {
                         {dayNames[day]}
                       </td>
                       {Array.from({ length: maxDayPeriods }, (_, i) => i + 1).map(period => {
-                        const isBlocked = activeAvailabilityTeacher.blocked.some(b => b.day === day && b.period === period);
+                        const isBlocked = activeAvailabilityTeacher?.blocked.some(b => b.day === day && b.period === period);
                         return (
                           <td key={period} className="p-1 border border-white/10">
                             <button
                               type="button"
-                              onClick={() => toggleBlockSlot(activeAvailabilityTeacher, day, period)}
+                              onClick={() => {
+                                if (activeAvailabilityTeacher) {
+                                  toggleBlockSlot(activeAvailabilityTeacher, day, period);
+                                }
+                              }}
                               className={`w-full py-2 rounded-lg font-bold transition-all text-xs ${
                                 isBlocked
                                   ? 'bg-red-500/30 border border-red-500/60 text-red-200 shadow-inner'
@@ -1005,26 +999,24 @@ export const StaffPage: React.FC = () => {
                 Done
               </MoltenButton>
             </div>
-          </PlasmaGlass>
-        </div>
-      )}
+      </Modal>
 
       {/* Teacher Weekly Schedule View Drawer */}
-      {scheduleViewTeacher && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <PlasmaGlass glow className="max-w-3xl w-full p-6 border-amber-500/40 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <CalendarDays className="w-4 h-4 text-ember-400" />
-                  Personal Timetable: {scheduleViewTeacher.name} ({scheduleViewTeacher.code})
-                </h3>
-                <p className="text-xs text-slate-400">Classes assigned to this teacher across the weekly timetable</p>
-              </div>
-              <button onClick={() => setScheduleViewTeacher(null)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={Boolean(scheduleViewTeacher)}
+        onClose={() => setScheduleViewTeacher(null)}
+        maxWidth="2xl"
+        title={scheduleViewTeacher ? `Personal Timetable: ${scheduleViewTeacher.name} (${scheduleViewTeacher.code})` : 'Personal Timetable'}
+        subtitle="Classes assigned to this teacher across the weekly timetable"
+        icon={<CalendarDays className="w-4 h-4 text-ember-400" />}
+        footer={
+          <div className="flex justify-end w-full">
+            <MoltenButton size="sm" variant="ghost" onClick={() => setScheduleViewTeacher(null)}>
+              Close
+            </MoltenButton>
+          </div>
+        }
+      >
 
             {timetableSlots.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-xs">
@@ -1044,7 +1036,7 @@ export const StaffPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {activeDays.map((day: number) => (
+                    {scheduleViewTeacher && activeDays.map((day: number) => (
                       <tr key={day}>
                         <td className="p-2 text-left font-bold text-slate-200 border border-white/10 bg-white/5">
                           {dayNames[day]}
@@ -1093,14 +1085,7 @@ export const StaffPage: React.FC = () => {
               </div>
             )}
 
-            <div className="flex justify-end pt-2 border-t border-white/10">
-              <MoltenButton size="sm" variant="ghost" onClick={() => setScheduleViewTeacher(null)}>
-                Close
-              </MoltenButton>
-            </div>
-          </PlasmaGlass>
-        </div>
-      )}
+      </Modal>
 
       {/* Delete Confirmation Modal */}
       <ReferentialWarningModal

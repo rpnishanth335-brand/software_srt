@@ -3,6 +3,7 @@ import { useTimetableStore } from '../store/useTimetableStore';
 import { PlasmaGlass } from '../components/PlasmaGlass';
 import { MoltenButton } from '../components/MoltenButton';
 import { ReferentialWarningModal } from '../components/ReferentialWarningModal';
+import { Modal } from '../components/ui/Modal';
 import { 
   GraduationCap, 
   Plus, 
@@ -726,95 +727,88 @@ export const ClassesPage: React.FC = () => {
       )}
 
       {/* Edit Class Modal */}
-      {editingClass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <PlasmaGlass glow className="max-w-md w-full p-6 border-ember-500/40 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Edit2 className="w-4 h-4 text-ember-400" /> Edit Class Details
-              </h3>
-              <button onClick={() => setEditingClass(null)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={Boolean(editingClass)}
+        onClose={() => setEditingClass(null)}
+        maxWidth="md"
+        title="Edit Class Details"
+        icon={<Edit2 className="w-5 h-5 text-ember-400" />}
+      >
+        <form onSubmit={handleSaveEdit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Class Name *</label>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
+            />
+          </div>
 
-            <form onSubmit={handleSaveEdit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Class Name *</label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Section *</label>
+            <input
+              type="text"
+              value={editSection}
+              onChange={(e) => setEditSection(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400 uppercase"
+            />
+          </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Section *</label>
-                <input
-                  type="text"
-                  value={editSection}
-                  onChange={(e) => setEditSection(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400 uppercase"
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Homeroom</label>
+            <select
+              value={editRoomId}
+              onChange={(e) => setEditRoomId(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
+            >
+              <option value="">None / Custom</option>
+              {rooms.map((r) => (
+                <option key={r.id} value={r.id}>{r.code || r.number} - {r.name}</option>
+              ))}
+            </select>
+          </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Homeroom</label>
-                <select
-                  value={editRoomId}
-                  onChange={(e) => setEditRoomId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
-                >
-                  <option value="">None / Custom</option>
-                  {rooms.map((r) => (
-                    <option key={r.id} value={r.id}>{r.code || r.number} - {r.name}</option>
-                  ))}
-                </select>
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Class Teacher</label>
+            <select
+              value={editClassTeacherId}
+              onChange={(e) => setEditClassTeacherId(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
+            >
+              <option value="">None Assigned</option>
+              {teachers.map((t) => (
+                <option key={t.id} value={t.id}>{t.name} ({t.code})</option>
+              ))}
+            </select>
+          </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Class Teacher</label>
-                <select
-                  value={editClassTeacherId}
-                  onChange={(e) => setEditClassTeacherId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
-                >
-                  <option value="">None Assigned</option>
-                  {teachers.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.code})</option>
-                  ))}
-                </select>
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Student Strength</label>
+            <input
+              type="number"
+              min={1}
+              max={120}
+              value={editStrength}
+              onChange={(e) => setEditStrength(parseInt(e.target.value, 10) || 30)}
+              className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
+            />
+          </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Student Strength</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={120}
-                  value={editStrength}
-                  onChange={(e) => setEditStrength(parseInt(e.target.value, 10) || 30)}
-                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400"
-                />
-              </div>
+          {editError && (
+            <p className="text-xs text-red-400 font-medium">{editError}</p>
+          )}
 
-              {editError && (
-                <p className="text-xs text-red-400 font-medium">{editError}</p>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
-                <MoltenButton type="button" size="sm" variant="ghost" onClick={() => setEditingClass(null)}>
-                  Cancel
-                </MoltenButton>
-                <MoltenButton type="submit" size="sm" variant="molten">
-                  Save Changes
-                </MoltenButton>
-              </div>
-            </form>
-          </PlasmaGlass>
-        </div>
-      )}
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+            <MoltenButton type="button" size="sm" variant="ghost" onClick={() => setEditingClass(null)}>
+              Cancel
+            </MoltenButton>
+            <MoltenButton type="submit" size="sm" variant="molten">
+              Save Changes
+            </MoltenButton>
+          </div>
+        </form>
+      </Modal>
 
       {/* Delete Confirmation Modal with Cascade Check */}
       <ReferentialWarningModal

@@ -177,7 +177,24 @@ ChronoForge features official Google Sign-In powered by **Google Cloud Console O
    - Also add `VITE_GOOGLE_CLIENT_ID` in your **Vercel Project Settings > Environment Variables** for production.
 
 
-## 📄 License
+
+---
+
+## 🤖 Google Gemini AI Assistant & Timetable Synthesis
+
+ChronoForge features a hybrid AI timetable synthesis pipeline:
+1. **Local Mathematical Pre-Calculations:** Class utilization, teacher capacity matrices, and pigeonhole scarcity analysis run 100% locally in the browser first.
+2. **Google Gemini LLM Generation:** Sends structured, anonymized schedule requirements (using strict JSON responseSchema).
+3. **Deterministic Constraint Validator:** Strictly validates zero teacher double-booking, no class overlap, respect for blocked slots, exact weekly counts, and consecutive double periods.
+4. **Targeted Repair Loop & Solver Guarantee:** If residual conflicts exist, Gemini attempts targeted repair (up to 3 rounds). If clashes persist or if the network is offline, the local simulated annealing engine guarantees 0 hard conflicts.
+
+### Gemini API Key Configuration
+- Keys are managed exclusively in **Settings > AI Assistant** (never on the login page).
+- **Security & Privacy:** Keys are encrypted locally with the **Web Crypto API (AES-GCM 256-bit)** and stored in IndexedDB namespaced to your Google account UID. Keys are never logged, never put in URLs, and stripped from project backups.
+- **Serverless Proxy Mode (Optional):** You can toggle between Direct Browser calls and the Vercel serverless function (/api/gemini) to avoid exposing keys in client-side network inspection.
+
+
+
 MIT License. Built for educational and administrative excellence.
 #   s o f t w a r e _ s r t  
  

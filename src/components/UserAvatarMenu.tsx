@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { LogOut, ShieldCheck, ChevronDown } from 'lucide-react';
-import { MoltenButton } from './MoltenButton';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 
 interface UserAvatarMenuProps {
   compact?: boolean;
@@ -28,6 +28,7 @@ export const UserAvatarMenu: React.FC<UserAvatarMenuProps> = ({ compact = false 
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="User account menu"
         className="flex items-center gap-2 p-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-left focus:outline-none focus:ring-1 focus:ring-amber-500/50"
         title={user.displayName || user.email || 'User Account'}
       >
@@ -104,43 +105,18 @@ export const UserAvatarMenu: React.FC<UserAvatarMenuProps> = ({ compact = false 
       )}
 
       {/* Confirmation Modal */}
-      {showConfirmLogout && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-sm rounded-2xl bg-[#141021] border border-white/15 p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400">
-                <LogOut className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">Sign Out Confirmation</h3>
-                <p className="text-xs text-slate-400">Are you sure you want to exit your session?</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-300 bg-black/30 p-3 rounded-xl border border-white/5">
-              All your timetable drafts are safely stored in your browser's IndexedDB and will reload automatically when you sign back in.
-            </p>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <MoltenButton
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowConfirmLogout(false)}
-              >
-                Cancel
-              </MoltenButton>
-              <MoltenButton
-                size="sm"
-                variant="molten"
-                onClick={handleSignOutConfirm}
-                className="bg-red-500/80 hover:bg-red-500 border-red-500/50"
-              >
-                Sign Out
-              </MoltenButton>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={showConfirmLogout}
+        onClose={() => setShowConfirmLogout(false)}
+        onConfirm={handleSignOutConfirm}
+        title="Sign Out Confirmation"
+        description="Are you sure you want to exit your session?"
+        note="All your timetable drafts are safely stored in your browser's IndexedDB and will reload automatically when you sign back in."
+        confirmLabel="Sign Out"
+        cancelLabel="Cancel"
+        variant="danger"
+        iconType="logout"
+      />
     </div>
   );
 };

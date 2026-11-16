@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
 import { PlasmaGlass } from '../components/PlasmaGlass';
 import { MoltenButton } from '../components/MoltenButton';
+import { Modal } from '../components/ui/Modal';
 import { 
   Grid3X3, 
   HelpCircle, 
@@ -11,8 +12,7 @@ import {
   Wand2, 
   Copy, 
   RotateCcw, 
-  Trash2, 
-  X
+  Trash2
 } from 'lucide-react';
 import { ID, ClassRoom } from '../types';
 
@@ -410,65 +410,61 @@ export const AssignmentsPage: React.FC = () => {
       )}
 
       {/* Copy Row Modal */}
-      {copySourceClass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <PlasmaGlass glow className="max-w-md w-full p-6 border-amber-500/40 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Copy className="w-4 h-4 text-ember-400" />
-                Copy Allocations from {copySourceClass.name} – {copySourceClass.section}
-              </h3>
-              <button onClick={() => setCopySourceClass(null)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={Boolean(copySourceClass)}
+        onClose={() => setCopySourceClass(null)}
+        maxWidth="md"
+        title={copySourceClass ? `Copy Allocations from ${copySourceClass.name} – ${copySourceClass.section}` : 'Copy Allocations'}
+        subtitle="Select target classes to receive the exact same weekly subject period distribution"
+        icon={<Copy className="w-5 h-5 text-ember-400" />}
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <MoltenButton size="sm" variant="ghost" onClick={() => setCopySourceClass(null)}>
+              Cancel
+            </MoltenButton>
+            <MoltenButton
+              size="sm"
+              variant="molten"
+              onClick={handleExecuteCopy}
+              disabled={copyTargetIds.length === 0}
+            >
+              Copy to {copyTargetIds.length} Classes
+            </MoltenButton>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-xs text-slate-300">
+            Target classes:
+          </p>
 
-            <p className="text-xs text-slate-300">
-              Select target classes to receive the exact same weekly subject period distribution:
-            </p>
-
-            <div className="max-h-48 overflow-y-auto space-y-1.5 p-2 rounded-xl bg-black/30 border border-white/10">
-              {selectedClasses
-                .filter(c => c.id !== copySourceClass.id)
-                .map((c) => {
-                  const isChecked = copyTargetIds.includes(c.id);
-                  return (
-                    <label
-                      key={c.id}
-                      className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer text-xs"
-                    >
-                      <span className="font-semibold text-white">{c.name} – {c.section}</span>
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {
-                          setCopyTargetIds(prev =>
-                            isChecked ? prev.filter(x => x !== c.id) : [...prev, c.id]
-                          );
-                        }}
-                        className="rounded border-white/20 bg-black/40 text-ember-500 focus:ring-0"
-                      />
-                    </label>
-                  );
-                })}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
-              <MoltenButton size="sm" variant="ghost" onClick={() => setCopySourceClass(null)}>
-                Cancel
-              </MoltenButton>
-              <MoltenButton
-                size="sm"
-                variant="molten"
-                onClick={handleExecuteCopy}
-                disabled={copyTargetIds.length === 0}
-              >
-                Copy to {copyTargetIds.length} Classes
-              </MoltenButton>
-            </div>
-          </PlasmaGlass>
+          <div className="max-h-56 overflow-y-auto space-y-1.5 p-2 rounded-xl bg-black/30 border border-white/10">
+            {copySourceClass && selectedClasses
+              .filter(c => c.id !== copySourceClass.id)
+              .map((c) => {
+                const isChecked = copyTargetIds.includes(c.id);
+                return (
+                  <label
+                    key={c.id}
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer text-xs"
+                  >
+                    <span className="font-semibold text-white">{c.name} – {c.section}</span>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {
+                        setCopyTargetIds(prev =>
+                          isChecked ? prev.filter(x => x !== c.id) : [...prev, c.id]
+                        );
+                      }}
+                      className="rounded border-white/20 bg-black/40 text-ember-500 focus:ring-0"
+                    />
+                  </label>
+                );
+              })}
+          </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };

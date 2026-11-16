@@ -1,8 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
+import { useAuth } from '../auth/useAuth';
 import { runFeasibilityAudit } from '../calc/feasibility';
 import { PlasmaGlass } from '../components/PlasmaGlass';
 import { MoltenButton } from '../components/MoltenButton';
+import { MissingAiKeyBanner } from '../components/ai/MissingAiKeyBanner';
+import { hasAiKey } from '../services/aiKeyStorage';
 import { 
   XCircle, 
   AlertTriangle, 
@@ -18,6 +21,12 @@ import {
 
 export const FeasibilityPage: React.FC = () => {
   const { project, setCurrentRoute } = useTimetableStore();
+  const { user } = useAuth();
+  const [hasConfiguredKey, setHasConfiguredKey] = useState<boolean>(true);
+
+  useEffect(() => {
+    hasAiKey(user?.uid || 'default_user').then(setHasConfiguredKey);
+  }, [user?.uid]);
 
   const audit = useMemo(() => {
     return runFeasibilityAudit(project);
@@ -65,6 +74,10 @@ export const FeasibilityPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {!hasConfiguredKey && (
+        <MissingAiKeyBanner currentRouteName="feasibility" />
+      )}
 
       {/* Why We Ask Hint */}
       <div className="flex items-start gap-3 p-3.5 rounded-xl bg-ember-500/10 border border-ember-500/20 text-ember-200 text-xs">

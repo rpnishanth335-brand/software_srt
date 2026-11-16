@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTimetableStore } from '../store/useTimetableStore';
+import { useAuth } from '../auth/useAuth';
 import { PlasmaGlass } from '../components/PlasmaGlass';
 import { MoltenButton } from '../components/MoltenButton';
+import { Modal } from '../components/ui/Modal';
 import { 
   Settings, 
   Moon, 
@@ -13,11 +15,21 @@ import {
   AlertTriangle,
   HardDrive,
   KeyRound,
-  ShieldCheck
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  ClipboardPaste,
+  ExternalLink,
+  CheckCircle2,
+  XCircle,
+  HelpCircle,
+  ArrowLeft
 } from 'lucide-react';
 import { QualityMode } from '../theme/tokens';
 import { listSavedProjects, deleteProjectFromDB } from '../store/db';
-import { Project } from '../types';
+import { Project, AppRoute } from '../types';
+import { saveAiKey, getAiKey, removeAiKey } from '../services/aiKeyStorage';
+import { testGeminiConnection, AiConnectionStatus } from '../services/geminiClient';
 
 interface SettingsPageProps {
   isDaylight: boolean;
@@ -34,22 +46,68 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 }) => {
   const { 
     project, 
-    loadDemoSchool, 
     resetProject, 
     loadProject, 
     persistToDatabase, 
-    addToast 
+    addToast,
+    setCurrentRoute
   } = useTimetableStore();
+  const { user } = useAuth();
 
-  const [aiKey, setAiKey] = useState<string>(() => localStorage.getItem('chronoforge_ai_key') || '');
-  const [aiModel, setAiModel] = useState<string>(() => localStorage.getItem('chronoforge_ai_model') || 'gemini-1.5-flash');
+  // AI Configuration State
+  const [aiKey, setAiKey] = useState<string>('');
+  const [showKey, setShowKey] = useState<boolean>(false);
+  const [aiModel, setAiModel] = useState<string>(() => localStorage.getItem('chronoforge_ai_model') || 'gemini-2.5-flash');
+  const [aiTemperature, setAiTemperature] = useState<number>(() => {
+    const saved = localStorage.getItem('chronoforge_ai_temp');
+    return saved !== null ? parseFloat(saved) : 0.1;
+  });
+  const [useAiForGeneration, setUseAiForGeneration] = useState<boolean>(() => {
+    return localStorage.getItem('chronoforge_use_ai_gen') !== 'false';
+  });
+  const [useProxy, setUseProxy] = useState<boolean>(() => {
+    return localStorage.getItem('chronoforge_use_proxy') === 'true';
+  });
+
   const [isTestingAi, setIsTestingAi] = useState(false);
-  const [aiStatus, setAiStatus] = useState<string | null>(null);
+  const [aiStatus, setAiStatus] = useState<AiConnectionStatus>('unconfigured');
+  const [aiStatusMessage, setAiStatusMessage] = useState<string>('');
+  const [returnRoute, setReturnRoute] = useState<string | null>(null);
 
   // Saved Projects from IndexedDB
   const [savedProjects, setSavedProjects] = useState<Project[]>([]);
   const [confirmBlankPrompt, setConfirmBlankPrompt] = useState(false);
   const [typedConfirmation, setTypedConfirmation] = useState('');
+
+  // Check for return route from banner
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('chronoforge_return_route');
+      if (stored) {
+        setReturnRoute(stored);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Load encrypted key on mount or user change
+  useEffect(() => {
+    const loadKey = async () => {
+      const uid = user?.uid || 'default_user';
+      const savedKey = await getAiKey(uid);
+      if (savedKey) {
+        setAiKey(savedKey);
+        setAiStatus('connected');
+        setAiStatusMessage('Key configured and encrypted in IndexedDB.');
+      } else {
+        setAiKey('');
+        setAiStatus('unconfigured');
+        setAiStatusMessage('No API key configured.');
+      }
+    };
+    loadKey();
+  }, [user?.uid]);
 
   useEffect(() => {
     fetchSavedProjects();
@@ -64,32 +122,92 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     }
   };
 
-  const handleSaveAiKey = () => {
-    localStorage.setItem('chronoforge_ai_key', aiKey.trim());
-    localStorage.setItem('chronoforge_ai_model', aiModel);
-    addToast('AI configuration saved.', 'success');
+  const handlePasteKey = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setAiKey(text.trim());
+        addToast('Pasted API key from clipboard.', 'info');
+      }
+    } catch (err) {
+      addToast('Clipboard access was blocked by your browser.', 'warning');
+    }
+  };
+
+  const handleSaveAiKey = async () => {
+    const uid = user?.uid || 'default_user';
+    try {
+      await saveAiKey(uid, aiKey);
+      localStorage.setItem('chronoforge_ai_model', aiModel);
+      localStorage.setItem('chronoforge_ai_temp', aiTemperature.toString());
+      localStorage.setItem('chronoforge_use_ai_gen', useAiForGeneration.toString());
+      localStorage.setItem('chronoforge_use_proxy', useProxy.toString());
+
+      if (aiKey.trim()) {
+        setAiStatus('connected');
+        setAiStatusMessage('Key encrypted and saved securely for this account.');
+        addToast('Gemini AI configuration saved successfully.', 'success');
+      } else {
+        setAiStatus('unconfigured');
+        setAiStatusMessage('API key removed.');
+        addToast('AI key cleared.', 'info');
+      }
+    } catch (err) {
+      console.error('Failed to save AI key:', err);
+      addToast('Could not save encrypted key to IndexedDB.', 'error');
+    }
   };
 
   const handleTestAiConnection = async () => {
     if (!aiKey.trim()) {
-      setAiStatus('Please enter an API key first.');
+      setAiStatus('unconfigured');
+      setAiStatusMessage('Please enter an API key first.');
       return;
     }
+
     setIsTestingAi(true);
-    setAiStatus(null);
+    setAiStatusMessage('Connecting to Gemini API...');
     try {
-      // Quick client format validation
-      if (!aiKey.startsWith('AIza')) {
-        setAiStatus('Key format note: Standard Gemini keys start with "AIza".');
+      const result = await testGeminiConnection(aiKey, aiModel, useProxy);
+      setAiStatus(result.status);
+      setAiStatusMessage(result.message);
+
+      if (result.status === 'connected') {
+        addToast('Gemini API connection successful!', 'success');
+        // Automatically save on verified test
+        const uid = user?.uid || 'default_user';
+        await saveAiKey(uid, aiKey);
+      } else if (result.status === 'invalid') {
+        addToast('Gemini API key is invalid or unauthorized.', 'error');
+      } else if (result.status === 'ratelimited') {
+        addToast('Gemini API quota exceeded (429).', 'warning');
       } else {
-        setAiStatus('Key verified and saved for client-side queries.');
+        addToast('Gemini test connection failed.', 'error');
       }
-      addToast('AI key configuration verified.', 'success');
-    } catch {
-      setAiStatus('Connection check failed.');
-      addToast('AI check failed.', 'error');
+    } catch (err: any) {
+      setAiStatus('error');
+      setAiStatusMessage(err?.message || 'Connection test failed.');
+      addToast('Connection test failed.', 'error');
     } finally {
       setIsTestingAi(false);
+    }
+  };
+
+  const handleRemoveAiKey = async () => {
+    const uid = user?.uid || 'default_user';
+    await removeAiKey(uid);
+    setAiKey('');
+    setAiStatus('unconfigured');
+    setAiStatusMessage('API key has been removed from secure storage.');
+    addToast('Gemini API key removed.', 'info');
+  };
+
+  const handleReturnToPrevious = () => {
+    if (returnRoute) {
+      try {
+        sessionStorage.removeItem('chronoforge_return_route');
+      } catch {}
+      setCurrentRoute(returnRoute as AppRoute);
     }
   };
 
@@ -99,29 +217,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     addToast('Current project snapshot saved to IndexedDB.', 'success');
   };
 
-  const handleDeleteSavedProject = async (id: string) => {
-    if (id === project.id) {
-      addToast('Cannot delete the currently active project.', 'warning');
-      return;
-    }
-    await deleteProjectFromDB(id);
-    await fetchSavedProjects();
-    addToast('Saved project deleted from IndexedDB.', 'info');
-  };
-
   const handleConfirmBlank = () => {
-    if (typedConfirmation.trim().toUpperCase() !== 'RESET') {
-      addToast('Please type "RESET" to confirm clearing all data.', 'warning');
-      return;
+    if (typedConfirmation.trim().toUpperCase() === 'RESET') {
+      resetProject();
+      setConfirmBlankPrompt(false);
+      setTypedConfirmation('');
+      addToast('Project data has been cleared completely.', 'info');
     }
-    resetProject();
-    setConfirmBlankPrompt(false);
-    setTypedConfirmation('');
-    addToast('All project data has been reset to blank.', 'info');
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12 animate-fadeIn">
+    <div className="space-y-6 max-w-4xl mx-auto pb-12 animate-fadeIn">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
         <div className="flex items-center gap-3">
@@ -130,155 +236,287 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
           <div>
             <h1 className="text-xl font-bold text-white tracking-wide">
-              Settings &amp; Database Management
+              System Settings &amp; Preferences
             </h1>
             <p className="text-xs text-slate-400">
-              Customize appearance themes, hardware acceleration, optional AI, and IndexedDB storage
+              Configure AI assistant parameters, encryption storage, visual theme, and database backups
             </p>
           </div>
         </div>
+
+        {returnRoute && (
+          <MoltenButton
+            size="sm"
+            variant="molten"
+            onClick={handleReturnToPrevious}
+            leftIcon={<ArrowLeft className="w-4 h-4" />}
+          >
+            Return to {returnRoute === 'generate' ? 'Generator' : returnRoute === 'feasibility' ? 'Feasibility' : 'Previous Page'}
+          </MoltenButton>
+        )}
       </div>
 
-      {/* Visual & Theme Preferences */}
-      <PlasmaGlass glow className="p-6 border-white/10 space-y-5">
-        <div className="text-sm font-bold text-amber-200 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-ember-400" /> Visual Themes &amp; Render Quality
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {/* Theme Mode */}
-          <div className="p-4 rounded-xl bg-black/30 border border-white/5 space-y-3">
-            <label className="block text-xs font-semibold text-slate-300">Color Palette</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => isDaylight && onToggleDaylight()}
-                className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border transition-all ${
-                  !isDaylight
-                    ? 'bg-amber-500/20 border-amber-500/60 text-white shadow-ember-glow'
-                    : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
-                }`}
-              >
-                <Moon className="w-4 h-4 text-amber-400" /> Plasma Dark
-              </button>
-
-              <button
-                type="button"
-                onClick={() => !isDaylight && onToggleDaylight()}
-                className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border transition-all ${
-                  isDaylight
-                    ? 'bg-amber-500/20 border-amber-500/60 text-white shadow-ember-glow'
-                    : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
-                }`}
-              >
-                <Sun className="w-4 h-4 text-amber-400" /> Daylight
-              </button>
+      {/* ================================================================= */}
+      {/* 1. AI ASSISTANT & GEMINI CONFIGURATION (SECTION 2 REQUIREMENTS)  */}
+      {/* ================================================================= */}
+      <PlasmaGlass glow className="p-6 border-white/10 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 shadow-ember-glow">
+              <Bot className="w-5 h-5" />
             </div>
-            <p className="text-[11px] text-slate-500">
-              Plasma Dark features molten embers and liquid refraction filters.
-            </p>
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                Gemini AI Assistant &amp; Timetable Generation
+              </h3>
+              <p className="text-xs text-slate-400">
+                Encrypted in IndexedDB per Google User via Web Crypto API (AES-GCM)
+              </p>
+            </div>
           </div>
 
-          {/* Graphics Quality */}
-          <div className="p-4 rounded-xl bg-black/30 border border-white/5 space-y-3">
-            <label className="block text-xs font-semibold text-slate-300">Graphics &amp; Effects Pipeline</label>
-            <div className="grid grid-cols-3 gap-2">
-              {(['high', 'medium', 'low'] as const).map((q) => (
+          {/* Status Badge */}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {aiStatus === 'connected' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Connected
+              </span>
+            )}
+            {aiStatus === 'invalid' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-500/15 text-red-300 border border-red-500/30">
+                <XCircle className="w-3.5 h-3.5 text-red-400" /> Invalid Key
+              </span>
+            )}
+            {aiStatus === 'ratelimited' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> Rate Limited
+              </span>
+            )}
+            {aiStatus === 'unconfigured' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/5 text-slate-400 border border-white/10">
+                Not configured
+              </span>
+            )}
+            {aiStatus === 'error' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-500/15 text-red-300 border border-red-500/30">
+                Connection Error
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* API Key Input */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <KeyRound className="w-3.5 h-3.5 text-amber-400" /> Google Gemini API Key
+            </label>
+            <a
+              href="https://aistudio.google.com/app/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1 underline underline-offset-2"
+            >
+              Get a free key from Google AI Studio <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+
+          <div className="relative flex items-center">
+            <input
+              type={showKey ? 'text' : 'password'}
+              value={aiKey}
+              onChange={(e) => setAiKey(e.target.value)}
+              placeholder="Paste AIzaSy... API key"
+              className="w-full pl-3 pr-24 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white text-xs font-mono-code focus:outline-none focus:border-amber-400"
+            />
+            <div className="absolute right-1.5 flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setShowKey(!showKey)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
+                title={showKey ? 'Hide Key' : 'Show Key'}
+              >
+                {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={handlePasteKey}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
+                title="Paste from clipboard"
+              >
+                <ClipboardPaste className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Model, Temperature & Parameters */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Target Gemini Model</label>
+            <select
+              value={aiModel}
+              onChange={(e) => setAiModel(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-xs focus:outline-none focus:border-purple-400 font-mono-code"
+            >
+              <option value="gemini-2.5-flash">gemini-2.5-flash (Recommended, Fast &amp; Balanced)</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro (Deep Multimodal Reasoning)</option>
+              <option value="gemini-1.5-flash">gemini-1.5-flash (Legacy Lightweight)</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-slate-300">Sampling Temperature:</span>
+              <span className="font-mono-code text-amber-300 font-bold">{aiTemperature.toFixed(2)}</span>
+            </div>
+            <input
+              type="range"
+              min="0.0"
+              max="1.0"
+              step="0.05"
+              value={aiTemperature}
+              onChange={(e) => setAiTemperature(parseFloat(e.target.value))}
+              className="w-full accent-amber-500 bg-white/10 h-1.5 rounded-lg cursor-pointer"
+            />
+            <p className="text-[10px] text-slate-500">Low temperature (0.05 - 0.2) is optimal for strict constraint satisfaction.</p>
+          </div>
+        </div>
+
+        {/* Toggles */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          <label className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+            <input
+              type="checkbox"
+              checked={useAiForGeneration}
+              onChange={(e) => setUseAiForGeneration(e.target.checked)}
+              className="w-4 h-4 rounded text-amber-500 focus:ring-0 accent-amber-500"
+            />
+            <div>
+              <div className="text-xs font-semibold text-white">Enable AI in Timetable Generator</div>
+              <div className="text-[11px] text-slate-400">Uses Gemini to suggest schedules before local validator repair</div>
+            </div>
+          </label>
+
+          <label className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+            <input
+              type="checkbox"
+              checked={useProxy}
+              onChange={(e) => setUseProxy(e.target.checked)}
+              className="w-4 h-4 rounded text-amber-500 focus:ring-0 accent-amber-500"
+            />
+            <div>
+              <div className="text-xs font-semibold text-white">Route through Serverless (/api/gemini)</div>
+              <div className="text-[11px] text-slate-400">Protects API key from browser network tab inspection</div>
+            </div>
+          </label>
+        </div>
+
+        {/* Action Buttons & Feedback */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <div className="flex items-center gap-2">
+            <MoltenButton
+              size="sm"
+              variant="molten"
+              onClick={handleSaveAiKey}
+              className="bg-purple-600 hover:bg-purple-500 border-purple-500/40"
+            >
+              Save Configuration
+            </MoltenButton>
+            <MoltenButton
+              size="sm"
+              variant="glass"
+              onClick={handleTestAiConnection}
+              disabled={isTestingAi || !aiKey.trim()}
+            >
+              {isTestingAi ? 'Testing...' : 'Test Connection'}
+            </MoltenButton>
+          </div>
+
+          {aiKey.trim() && (
+            <button
+              onClick={handleRemoveAiKey}
+              className="text-xs text-red-400 hover:text-red-300 hover:underline px-2 py-1"
+            >
+              Remove Stored Key
+            </button>
+          )}
+        </div>
+
+        {aiStatusMessage && (
+          <div className={`p-3 rounded-xl text-xs flex items-center gap-2.5 ${
+            aiStatus === 'connected' 
+              ? 'bg-emerald-950/30 border border-emerald-500/30 text-emerald-200' 
+              : aiStatus === 'invalid' || aiStatus === 'error'
+              ? 'bg-red-950/30 border border-red-500/30 text-red-200'
+              : 'bg-white/5 border border-white/10 text-slate-300'
+          }`}>
+            <ShieldCheck className="w-4 h-4 shrink-0 text-amber-400" />
+            <span>{aiStatusMessage}</span>
+          </div>
+        )}
+
+        {/* Privacy Note */}
+        <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-1.5 text-xs text-slate-400">
+          <div className="font-semibold text-white flex items-center gap-1.5">
+            <HelpCircle className="w-3.5 h-3.5 text-amber-400" /> Privacy &amp; Data Minimization Notice:
+          </div>
+          <p>
+            When utilizing Gemini AI, ChronoForge transmits ONLY compact, anonymized schedule requirements: class names (e.g. "Grade 10A"), subject codes (e.g. "MATH"), teacher initials/codes, period counts, and constraint rules.
+          </p>
+          <p className="text-slate-500">
+            Student records, personal emails, phone numbers, profile photos, and Google account credentials are NEVER sent to any external server or model.
+          </p>
+        </div>
+      </PlasmaGlass>
+
+      {/* ================================================================= */}
+      {/* 2. THEME & VISUAL QUALITY PREFERENCES                             */}
+      {/* ================================================================= */}
+      <PlasmaGlass className="p-6 border-white/10 space-y-4">
+        <div className="text-sm font-bold text-amber-200 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-ember-400" /> Visual Theme &amp; Particle Render Quality
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+            <div>
+              <div className="text-xs font-semibold text-white">Color Mode</div>
+              <div className="text-[11px] text-slate-400">Obsidian Dark vs Daylight High-Contrast</div>
+            </div>
+            <button
+              onClick={onToggleDaylight}
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200"
+            >
+              {isDaylight ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-400" />}
+            </button>
+          </div>
+
+          <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-white">Particle Fidelity</span>
+              <span className="text-[11px] font-mono-code text-amber-300 uppercase">{quality}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+              {(['low', 'medium', 'high'] as const).map((q) => (
                 <button
                   key={q}
-                  type="button"
                   onClick={() => onQualityChange(q)}
-                  className={`py-2 rounded-xl text-xs font-bold capitalize border transition-all ${
-                    quality === q
-                      ? 'bg-amber-500/20 border-amber-500/60 text-white shadow-ember-glow'
-                      : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                  className={`py-1 rounded text-[11px] font-bold capitalize transition-colors ${
+                    quality === q ? 'bg-amber-500 text-white shadow-ember-glow' : 'bg-white/5 text-slate-400 hover:text-white'
                   }`}
                 >
                   {q}
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-slate-500">
-              {quality === 'high' && 'Full SVG filters, ember canvas, and animated thermal heat haze.'}
-              {quality === 'medium' && 'Molten glass refraction without ember particle canvas.'}
-              {quality === 'low' && 'Flat maximum performance rendering for low-power hardware.'}
-            </p>
           </div>
         </div>
       </PlasmaGlass>
 
-      {/* Cloud AI Configuration (Optional) */}
-      <PlasmaGlass className="p-6 border-white/10 space-y-5">
-        <div className="flex items-center justify-between">
-          <div className="text-sm font-bold text-amber-200 flex items-center gap-2">
-            <Bot className="w-4 h-4 text-purple-400" /> Optional Cloud AI Integration
-          </div>
-          <span className="text-[10px] font-mono-code px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-            Client-Side Only
-          </span>
-        </div>
-
-        <p className="text-xs text-slate-400 leading-relaxed">
-          ChronoForge functions 100% offline using deterministic simulated annealing. You may optionally supply a Google Gemini API key to enable natural-language rule adjustments and conversational timetable assistance. Keys remain in your local browser storage.
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-          <div className="sm:col-span-6">
-            <label className="block text-[11px] font-semibold text-slate-300 mb-1">Gemini API Key</label>
-            <div className="relative">
-              <KeyRound className="w-4 h-4 text-slate-500 absolute left-3 top-2.5 pointer-events-none" />
-              <input
-                type="password"
-                value={aiKey}
-                onChange={(e) => setAiKey(e.target.value)}
-                placeholder="AIzaSy..."
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-mono-code focus:outline-none focus:border-purple-400"
-              />
-            </div>
-          </div>
-
-          <div className="sm:col-span-3">
-            <label className="block text-[11px] font-semibold text-slate-300 mb-1">Model</label>
-            <select
-              value={aiModel}
-              onChange={(e) => setAiModel(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-xs focus:outline-none focus:border-purple-400"
-            >
-              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fastest)</option>
-              <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep Reasoning)</option>
-            </select>
-          </div>
-
-          <div className="sm:col-span-3 flex gap-2">
-            <MoltenButton
-              size="md"
-              variant="glass"
-              onClick={handleTestAiConnection}
-              disabled={isTestingAi}
-              className="flex-1 justify-center"
-            >
-              {isTestingAi ? 'Testing...' : 'Test Key'}
-            </MoltenButton>
-            <MoltenButton
-              size="md"
-              variant="molten"
-              onClick={handleSaveAiKey}
-              className="flex-1 justify-center"
-            >
-              Save
-            </MoltenButton>
-          </div>
-        </div>
-
-        {aiStatus && (
-          <div className="text-xs text-purple-300 bg-purple-950/30 p-2.5 rounded-xl border border-purple-500/20 flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
-            <span>{aiStatus}</span>
-          </div>
-        )}
-      </PlasmaGlass>
-
-      {/* IndexedDB Local Storage & Project Snapshots */}
+      {/* ================================================================= */}
+      {/* 3. LOCAL DATABASE & PROJECT MANAGEMENT                            */}
+      {/* ================================================================= */}
       <PlasmaGlass className="p-6 border-white/10 space-y-5">
         <div className="flex items-center justify-between">
           <div className="text-sm font-bold text-amber-200 flex items-center gap-2">
@@ -308,20 +546,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${
                       isActive
                         ? 'bg-amber-500/10 border-amber-500/40'
-                        : 'bg-white/5 border-white/10 hover:bg-white/[0.08]'
+                        : 'bg-white/5 border-white/10 hover:border-white/20'
                     }`}
                   >
                     <div>
                       <div className="text-xs font-bold text-white flex items-center gap-2">
-                        <span>{p.school.name}</span>
+                        {p.school.name || 'Untitled School'}
                         {isActive && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono-code font-bold">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono-code">
                             Active
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-400 font-mono-code">
-                        {p.classes.length} Classes • {p.teachers.length} Teachers • Saved {new Date(p.updatedAt).toLocaleString()}
+                      <div className="text-[11px] text-slate-400">
+                        {p.classes.length} Classes • {p.teachers.length} Teachers • {p.subjects.length} Subjects
                       </div>
                     </div>
 
@@ -330,20 +568,25 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                         <MoltenButton
                           size="sm"
                           variant="ghost"
-                          onClick={() => loadProject(p)}
+                          onClick={() => {
+                            loadProject(p);
+                            addToast(`Loaded "${p.school.name}".`, 'success');
+                          }}
                         >
-                          Load
+                          Switch
                         </MoltenButton>
                       )}
-                      {!isActive && (
-                        <button
-                          onClick={() => handleDeleteSavedProject(p.id)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-red-400"
-                          title="Delete from IndexedDB"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                      <button
+                        onClick={async () => {
+                          await deleteProjectFromDB(p.id);
+                          await fetchSavedProjects();
+                          addToast('Project deleted from IndexedDB.', 'info');
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-white/5"
+                        title="Delete project snapshot"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 );
@@ -352,78 +595,72 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           )}
         </div>
 
-        {/* Danger Zone: Reset Operations */}
+        {/* Danger Zone */}
         <div className="pt-4 border-t border-white/10 space-y-3">
           <div className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
-            <AlertTriangle className="w-3.5 h-3.5" /> Reset Operations
+            <AlertTriangle className="w-4 h-4" /> Danger Zone
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-red-950/20 border border-red-500/30">
+            <div>
+              <div className="text-xs font-semibold text-white">Reset Project to Blank</div>
+              <div className="text-[11px] text-slate-400">
+                Wipes all classes, staff, subjects, assignments, and generated timetables
+              </div>
+            </div>
             <MoltenButton
               size="sm"
-              variant="glass"
-              onClick={loadDemoSchool}
-              leftIcon={<RotateCcw className="w-3.5 h-3.5 text-amber-300" />}
-            >
-              Reset to Demo School (8 Classes, 12 Teachers)
-            </MoltenButton>
-
-            <MoltenButton
-              size="sm"
-              variant="ghost"
+              variant="molten"
               onClick={() => setConfirmBlankPrompt(true)}
-              leftIcon={<Trash2 className="w-3.5 h-3.5" />}
-              className="text-red-400 border border-red-500/30 hover:bg-red-500/10"
+              className="bg-red-500/80 hover:bg-red-500 border-red-500/50"
+              leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
             >
-              Clear All Data (Blank State)
+              Reset All Data
             </MoltenButton>
           </div>
         </div>
       </PlasmaGlass>
 
-      {/* Double-Confirm Reset Modal */}
-      {confirmBlankPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <PlasmaGlass glow className="max-w-md w-full p-6 border-red-500/50 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white">Confirm Complete Reset</h3>
-                <p className="text-xs text-slate-400">This will wipe all classes, teachers, subjects, and timetables</p>
-              </div>
-            </div>
+      {/* ================================================================= */}
+      {/* 4. RESET CONFIRMATION MODAL (PORTAL CENTERED VIA MODAL)          */}
+      {/* ================================================================= */}
+      <Modal
+        isOpen={confirmBlankPrompt}
+        onClose={() => setConfirmBlankPrompt(false)}
+        maxWidth="md"
+        title="Confirm Complete Reset"
+        subtitle="This will wipe all classes, teachers, subjects, and timetables"
+        icon={<AlertTriangle className="w-5 h-5 text-red-400" />}
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <MoltenButton size="sm" variant="ghost" onClick={() => setConfirmBlankPrompt(false)}>
+              Cancel
+            </MoltenButton>
+            <MoltenButton
+              size="sm"
+              variant="molten"
+              onClick={handleConfirmBlank}
+              disabled={typedConfirmation.trim().toUpperCase() !== 'RESET'}
+              className="bg-red-600 hover:bg-red-500 text-white"
+            >
+              Clear All Data
+            </MoltenButton>
+          </div>
+        }
+      >
+        <div className="space-y-3 text-xs text-slate-300">
+          <p className="leading-relaxed">
+            To prevent accidental loss of your institution schedule, please type <strong className="text-amber-300 font-mono-code">RESET</strong> in the box below to proceed:
+          </p>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
-              To prevent accidental loss of your institution schedule, please type <strong className="text-amber-300 font-mono-code">RESET</strong> in the box below to proceed:
-            </p>
-
-            <input
-              type="text"
-              value={typedConfirmation}
-              onChange={(e) => setTypedConfirmation(e.target.value)}
-              placeholder='Type "RESET" to confirm'
-              className="w-full px-3 py-2 rounded-xl bg-black/50 border border-red-500/40 text-white font-mono-code text-sm uppercase focus:outline-none focus:border-red-400"
-            />
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
-              <MoltenButton size="sm" variant="ghost" onClick={() => setConfirmBlankPrompt(false)}>
-                Cancel
-              </MoltenButton>
-              <MoltenButton
-                size="sm"
-                variant="molten"
-                onClick={handleConfirmBlank}
-                disabled={typedConfirmation.trim().toUpperCase() !== 'RESET'}
-                className="bg-red-500 hover:bg-red-600"
-              >
-                Clear All Data
-              </MoltenButton>
-            </div>
-          </PlasmaGlass>
+          <input
+            type="text"
+            value={typedConfirmation}
+            onChange={(e) => setTypedConfirmation(e.target.value)}
+            placeholder='Type "RESET" to confirm'
+            className="w-full px-3 py-2 rounded-xl bg-black/50 border border-red-500/40 text-white font-mono-code text-sm uppercase focus:outline-none focus:border-red-400"
+          />
         </div>
-      )}
+      </Modal>
     </div>
   );
 };
