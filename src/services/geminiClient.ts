@@ -24,7 +24,7 @@ export interface TestConnectionResult {
  */
 export async function testGeminiConnection(
   apiKey: string,
-  model: string = 'gemini-2.5-flash',
+  model: string = 'gemini-3.8-flash',
   useProxy: boolean = false
 ): Promise<TestConnectionResult> {
   const cleanKey = apiKey.trim();
@@ -124,7 +124,7 @@ export async function callGeminiStructured<T>(
     throw new Error('Missing Gemini API key. Please configure your key in Settings > AI Assistant.');
   }
 
-  const model = options.model || 'gemini-2.5-flash';
+  const model = options.model || 'gemini-3.8-flash';
   const temperature = options.temperature !== undefined ? options.temperature : 0.1;
   const useProxy = options.useProxy || false;
 

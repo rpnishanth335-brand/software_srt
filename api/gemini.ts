@@ -5,7 +5,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }
 
-  const { action, apiKey, model = 'gemini-2.5-flash', temperature = 0.1, prompt, systemInstruction, responseSchema } = req.body || {};
+  const { action, apiKey, model = 'gemini-3.8-flash', temperature = 0.1, prompt, systemInstruction, responseSchema } = req.body || {};
 
   const resolvedApiKey = apiKey || process.env.GEMINI_API_KEY;
 

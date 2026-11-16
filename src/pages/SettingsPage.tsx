@@ -57,7 +57,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   // AI Configuration State
   const [aiKey, setAiKey] = useState<string>('');
   const [showKey, setShowKey] = useState<boolean>(false);
-  const [aiModel, setAiModel] = useState<string>(() => localStorage.getItem('chronoforge_ai_model') || 'gemini-2.5-flash');
+  const [aiModel, setAiModel] = useState<string>(() => {
+    const saved = localStorage.getItem('chronoforge_ai_model');
+    if (!saved || saved.includes('gemini-2.5') || saved.includes('gemini-1.5')) {
+      return 'gemini-3.8-flash';
+    }
+    return saved;
+  });
   const [aiTemperature, setAiTemperature] = useState<number>(() => {
     const saved = localStorage.getItem('chronoforge_ai_temp');
     return saved !== null ? parseFloat(saved) : 0.1;
@@ -359,9 +365,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               onChange={(e) => setAiModel(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-xs focus:outline-none focus:border-purple-400 font-mono-code"
             >
-              <option value="gemini-2.5-flash">gemini-2.5-flash (Recommended, Fast &amp; Balanced)</option>
-              <option value="gemini-2.5-pro">gemini-2.5-pro (Deep Multimodal Reasoning)</option>
-              <option value="gemini-1.5-flash">gemini-1.5-flash (Legacy Lightweight)</option>
+              <option value="gemini-3.8-flash">gemini-3.8-flash (Recommended, Fast &amp; Balanced)</option>
+              <option value="gemini-flash-latest">gemini-flash-latest (Always Latest Flash)</option>
+              <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (Pro Reasoning)</option>
             </select>
           </div>
 
