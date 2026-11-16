@@ -64,9 +64,12 @@ export interface Subject {
   color: string;
   type: 'theory' | 'lab' | 'sports' | 'activity';
   defaultPeriodsPerWeek?: number; // Default weekly periods (pre-fills class wizard)
+  periodsPerWeek?: number;
   doublePeriod: boolean;
+  requiresDoublePeriod?: boolean;
   maxPerDay: number;
   preferMorning: boolean;
+  isMorningPreferred?: boolean;
   specialRoomId?: ID;
 }
 
@@ -77,6 +80,8 @@ export interface Teacher {
   employeeId?: string;
   email?: string;
   phone?: string;
+  qualification?: string;
+  classTeacher?: string;
   subjectIds: ID[];
   classIds: ID[];
   maxPerDay: number;

@@ -4,6 +4,9 @@ import { PlasmaGlass } from '../components/PlasmaGlass';
 import { MoltenButton } from '../components/MoltenButton';
 import { ReferentialWarningModal } from '../components/ReferentialWarningModal';
 import { Modal } from '../components/ui/Modal';
+import { SmartImportModal } from '../components/importer/SmartImportModal';
+import { isCorruptedStaffRecord } from '../services/importer/dataCleaner';
+import { downloadStaffTemplate, exportCsvWithBom } from '../services/importer/templateGenerator';
 import { 
   Users, 
   Plus, 
@@ -100,6 +103,20 @@ export const StaffPage: React.FC = () => {
 
   // Bulk Selection
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<ID[]>([]);
+
+  // Smart Import Modal State
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  // Corrupted Staff Records Purge State
+  const [isPurgeModalOpen, setIsPurgeModalOpen] = useState(false);
+  const corruptedStaff = useMemo(() => teachers.filter(isCorruptedStaffRecord), [teachers]);
+
+  const handlePurgeCorrupted = () => {
+    const count = corruptedStaff.length;
+    corruptedStaff.forEach((t) => deleteTeacher(t.id));
+    setIsPurgeModalOpen(false);
+    addToast(`Successfully removed ${count} corrupted staff record${count > 1 ? 's' : ''}.`, 'success');
+  };
 
   // Auto suggest code from full name initials
   const handleNameChange = (val: string) => {
@@ -341,85 +358,44 @@ export const StaffPage: React.FC = () => {
     setActiveAvailabilityTeacher({ ...teacher, blocked: newBlocked });
   };
 
-  // CSV Export
+  // Export Staff (CSV with UTF-8 BOM)
   const exportTeachersCSV = () => {
-    const headers = ['Name', 'Code', 'EmployeeID', 'Email', 'MaxPerDay', 'MaxPerWeek', 'Subjects'];
-    const rows = teachers.map(t => {
-      const subCodes = t.subjectIds.map(sid => subjects.find(s => s.id === sid)?.code).filter(Boolean).join(';');
+    const headers = [
+      'Teacher Name',
+      'Short Code',
+      'Phone Number',
+      'Google Mail ID',
+      'Qualification',
+      'Class Teacher',
+      'MaxPerDay',
+      'MaxPerWeek',
+      'Subjects',
+    ];
+    const rows = teachers.map((t) => {
+      const subCodes = t.subjectIds
+        .map((sid) => subjects.find((s) => s.id === sid)?.code)
+        .filter(Boolean)
+        .join('; ');
       return [
-        `"${t.name}"`,
-        `"${t.code}"`,
-        `"${t.employeeId || ''}"`,
-        `"${t.email || ''}"`,
+        t.name,
+        t.code,
+        t.phone || '',
+        t.email || '',
+        t.qualification || '',
+        t.classTeacher || '',
         t.maxPerDay,
         t.maxPerWeek,
-        `"${subCodes}"`,
+        subCodes,
       ];
     });
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${project.school.name.replace(/\s+/g, '_')}_Teachers.csv`;
-    link.click();
-    addToast('Teachers exported to CSV.', 'success');
+    exportCsvWithBom(`${project.school.name.replace(/\s+/g, '_')}_Staff`, headers, rows);
+    addToast('Teachers exported to CSV (with Excel-compatible UTF-8 BOM).', 'success');
   };
 
-  // Download Template
-  const downloadTemplate = () => {
-    const csv = 'Name,Code,EmployeeID,Email,MaxPerDay,MaxPerWeek\nDr. Alan Turing,AT,EMP-101,turing@school.edu,5,24\nProf. Marie Curie,MC,EMP-102,curie@school.edu,5,26';
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'ChronoForge_Staff_Template.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // CSV Import
-  const handleCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
-        const lines = text.split('\n').filter((l) => l.trim().length > 0);
-        let imported = 0;
-
-        lines.slice(1).forEach((line) => {
-          const parts = line.split(',').map(p => p.trim().replace(/^"|"$/g, ''));
-          if (parts.length >= 2 && parts[0] && parts[1]) {
-            addTeacher({
-              name: parts[0],
-              code: parts[1].toUpperCase(),
-              employeeId: parts[2] || undefined,
-              email: parts[3] || undefined,
-              maxPerDay: parts[4] ? parseInt(parts[4], 10) : 5,
-              maxPerWeek: parts[5] ? parseInt(parts[5], 10) : 26,
-              maxConsecutive: 3,
-              subjectIds: subjects.map(s => s.id), // defaults to all
-              classIds: classes.map(c => c.id),
-              blocked: [],
-            });
-            imported++;
-          }
-        });
-
-        if (imported > 0) {
-          addToast(`Imported ${imported} staff members from CSV!`, 'success');
-        } else {
-          addToast('No valid staff rows found in CSV.', 'warning');
-        }
-      } catch {
-        addToast('Failed to parse staff CSV file.', 'error');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+  // Download Sample Template (.xlsx or .csv)
+  const downloadTemplate = (format: 'xlsx' | 'csv' = 'xlsx') => {
+    downloadStaffTemplate(format);
+    addToast(`Downloaded staff template (${format.toUpperCase()}).`, 'info');
   };
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -474,22 +450,61 @@ export const StaffPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <label className="cursor-pointer">
-            <input type="file" accept=".csv" onChange={handleCsvImport} className="hidden" />
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors">
-              <Upload className="w-3.5 h-3.5" /> Import CSV
-            </span>
-          </label>
+          <MoltenButton
+            size="sm"
+            variant="glass"
+            onClick={() => setIsImportModalOpen(true)}
+            leftIcon={<Upload className="w-3.5 h-3.5 text-amber-400" />}
+          >
+            Import Excel / CSV
+          </MoltenButton>
 
-          <MoltenButton size="sm" variant="glass" onClick={exportTeachersCSV} leftIcon={<Download className="w-3.5 h-3.5" />}>
+          <MoltenButton
+            size="sm"
+            variant="glass"
+            onClick={exportTeachersCSV}
+            leftIcon={<Download className="w-3.5 h-3.5" />}
+          >
             Export CSV
           </MoltenButton>
 
-          <MoltenButton size="sm" variant="ghost" onClick={downloadTemplate}>
+          <MoltenButton
+            size="sm"
+            variant="ghost"
+            onClick={() => downloadTemplate('xlsx')}
+            leftIcon={<Download className="w-3.5 h-3.5 text-slate-400" />}
+          >
             Template
           </MoltenButton>
         </div>
       </div>
+
+      {/* Corrupted Records Purge Banner */}
+      {corruptedStaff.length > 0 && (
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-red-500/15 border border-red-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-red-200">
+                Found {corruptedStaff.length} Corrupted Staff Record{corruptedStaff.length > 1 ? 's' : ''} (from prior binary import)
+              </div>
+              <div className="text-[11px] text-red-300/80">
+                These records contain garbled characters or internal Excel filenames. Clean them up safely in one click.
+              </div>
+            </div>
+          </div>
+          <MoltenButton
+            size="sm"
+            variant="danger"
+            onClick={() => setIsPurgeModalOpen(true)}
+            leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+          >
+            Remove Corrupted Staff Records ({corruptedStaff.length})
+          </MoltenButton>
+        </div>
+      )}
 
       {/* Why We Ask Hint */}
       <div className="flex items-start gap-3 p-3.5 rounded-xl bg-ember-500/10 border border-ember-500/20 text-ember-200 text-xs">
@@ -747,23 +762,42 @@ export const StaffPage: React.FC = () => {
               >
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
                     <input
                       type="checkbox"
                       checked={isBatchSelected}
                       onChange={() => toggleSelectRow(t.id)}
-                      className="rounded border-white/20 bg-black/40 text-ember-500 focus:ring-0 cursor-pointer"
+                      className="rounded border-white/20 bg-black/40 text-ember-500 focus:ring-0 cursor-pointer mt-1 shrink-0"
                     />
-                    <div>
-                      <h4 className="text-base font-bold text-white">
+                    <div className="min-w-0 flex-1">
+                      <h4
+                        className="text-base font-bold text-white break-words overflow-wrap-anywhere line-clamp-2"
+                        title={t.name}
+                      >
                         {t.name}
                       </h4>
-                      <div className="text-[11px] text-amber-300 font-mono-code font-semibold flex items-center gap-1.5">
+                      <div className="text-[11px] text-amber-300 font-mono-code font-semibold flex flex-wrap items-center gap-1.5 pt-0.5">
                         <span>{t.code}</span>
                         {t.employeeId && (
                           <span className="text-slate-500 font-normal">({t.employeeId})</span>
                         )}
+                        {t.classTeacher && (
+                          <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-sans font-medium">
+                            {t.classTeacher}
+                          </span>
+                        )}
+                        {t.qualification && (
+                          <span className="text-slate-400 font-normal text-[10px]">
+                            • {t.qualification}
+                          </span>
+                        )}
                       </div>
+                      {(t.phone || t.email) && (
+                        <div className="text-[10px] text-slate-400 font-mono-code flex flex-wrap gap-2 pt-1">
+                          {t.phone && <span>📞 {t.phone}</span>}
+                          {t.email && <span className="truncate max-w-[180px]" title={t.email}>✉️ {t.email}</span>}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1309,6 +1343,45 @@ export const StaffPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Purge Corrupted Records Modal */}
+      <Modal
+        isOpen={isPurgeModalOpen}
+        onClose={() => setIsPurgeModalOpen(false)}
+        title="Purge Corrupted Staff Records"
+        subtitle={`Remove ${corruptedStaff.length} corrupted entries created by prior text-based Excel import`}
+        maxWidth="md"
+        icon={<Trash2 className="w-5 h-5 text-red-400" />}
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-300">
+            The following records were identified as containing binary ZIP artifacts or replacement characters. Removing them will clean your database:
+          </p>
+          <div className="max-h-48 overflow-y-auto space-y-1.5 p-3 rounded-xl bg-black/40 border border-white/10">
+            {corruptedStaff.map((t) => (
+              <div key={t.id} className="text-xs font-mono-code text-red-300 flex items-center justify-between">
+                <span className="truncate max-w-[220px]">{t.name}</span>
+                <span className="text-slate-500 text-[10px]">({t.code})</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+            <MoltenButton size="sm" variant="ghost" onClick={() => setIsPurgeModalOpen(false)}>
+              Cancel
+            </MoltenButton>
+            <MoltenButton size="sm" variant="danger" onClick={handlePurgeCorrupted} leftIcon={<Trash2 className="w-3.5 h-3.5" />}>
+              Confirm Purge All ({corruptedStaff.length})
+            </MoltenButton>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Smart Excel & CSV Importer Modal */}
+      <SmartImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        entity="staff"
+      />
     </div>
   );
 };

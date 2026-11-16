@@ -158,14 +158,31 @@ export function runFeasibilityAudit(project: Project): FeasibilityResult {
 
   // Check 1: Zero Selected Classes
   if (selectedClasses.length === 0) {
-    blockingErrors.push({
-      id: 'err-no-classes',
-      severity: 'error',
-      code: 'ERR_NO_CLASSES_SELECTED',
-      message: 'No classes are selected for generation.',
-      affected: [],
-      suggestion: 'Go to Step 2 (Classes) and select at least one class cohort.',
-    });
+    if (classes.length === 0) {
+      const stepHint = subjects.length === 0
+        ? 'Go to Step 1 (Subjects) to add subjects first, then faculty, then classes.'
+        : teachers.length === 0
+        ? 'Go to Step 2 (Staff) to add faculty before setting up classes.'
+        : 'Go to Step 3 (Classes) to create your class cohorts.';
+
+      blockingErrors.push({
+        id: 'err-no-classes',
+        severity: 'error',
+        code: 'ERR_NO_CLASSES_CREATED',
+        message: 'No classes have been created yet.',
+        affected: [],
+        suggestion: stepHint,
+      });
+    } else {
+      blockingErrors.push({
+        id: 'err-no-classes',
+        severity: 'error',
+        code: 'ERR_NO_CLASSES_SELECTED',
+        message: 'No classes are selected for generation.',
+        affected: [],
+        suggestion: 'Go to Step 3 (Classes) and toggle on "Include in timetable" for at least one class.',
+      });
+    }
   }
 
   // Check 2: Class Slot Parity Checks

@@ -24,7 +24,7 @@ export interface TestConnectionResult {
  */
 export async function testGeminiConnection(
   apiKey: string,
-  model: string = 'gemini-3.8-flash',
+  model: string = 'gemini-2.0-flash',
   useProxy: boolean = false
 ): Promise<TestConnectionResult> {
   const cleanKey = apiKey.trim();
@@ -34,6 +34,11 @@ export async function testGeminiConnection(
       message: 'No API key provided.',
     };
   }
+
+  // Normalize deprecated or unavailable models to active gemini-2.0-flash
+  const activeModel = (!model || model.includes('gemini-2.5') || model.includes('gemini-3.8') || model === 'gemini-3.1-pro-preview')
+    ? 'gemini-2.0-flash'
+    : model;
 
   try {
     let url: string;
@@ -48,10 +53,10 @@ export async function testGeminiConnection(
       body = JSON.stringify({
         action: 'test',
         apiKey: cleanKey,
-        model,
+        model: activeModel,
       });
     } else {
-      url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:countTokens?key=${encodeURIComponent(cleanKey)}`;
+      url = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:countTokens?key=${encodeURIComponent(cleanKey)}`;
       body = JSON.stringify({
         contents: [
           {
@@ -70,28 +75,44 @@ export async function testGeminiConnection(
     if (res.ok) {
       return {
         status: 'connected',
-        message: `Successfully connected to ${model}! AI timetable assistance is active.`,
-      };
-    }
-
-    if (res.status === 400 || res.status === 403) {
-      return {
-        status: 'invalid',
-        message: 'Invalid API key or unauthorized permissions. Please check your Google AI Studio key.',
-      };
-    }
-
-    if (res.status === 429) {
-      return {
-        status: 'ratelimited',
-        message: 'Gemini API quota exceeded or rate limit reached. Please wait a moment or check your tier.',
+        message: `Successfully connected to ${activeModel}! AI timetable assistance is active.`,
       };
     }
 
     const errData = await res.json().catch(() => ({}));
+    const detailedMessage = (typeof errData?.error === 'string' ? errData.error : errData?.error?.message) || errData?.message || '';
+
+    if (res.status === 429) {
+      return {
+        status: 'ratelimited',
+        message: detailedMessage || 'Gemini API quota exceeded or rate limit reached. Please wait a moment or check your tier.',
+      };
+    }
+
+    if (res.status === 400 || res.status === 403) {
+      // If the error is specifically about the model being retired or not found
+      if (/not found|no longer available|unsupported/i.test(detailedMessage)) {
+        return {
+          status: 'error',
+          message: detailedMessage,
+        };
+      }
+      return {
+        status: 'invalid',
+        message: detailedMessage || 'Invalid API key or unauthorized permissions. Please check your Google AI Studio key.',
+      };
+    }
+
+    if (res.status === 404) {
+      return {
+        status: 'error',
+        message: detailedMessage || `Model '${model}' not found. Please choose an active model like gemini-2.0-flash or gemini-flash-latest.`,
+      };
+    }
+
     return {
       status: 'error',
-      message: errData?.error?.message || `Gemini API returned status ${res.status}.`,
+      message: detailedMessage || `Gemini API returned status ${res.status}.`,
     };
   } catch (err: any) {
     return {
@@ -121,7 +142,10 @@ export async function callGeminiStructured<T>(
     throw new Error('Missing Gemini API key. Please configure your key in Settings > AI Assistant.');
   }
 
-  const model = options.model || 'gemini-3.8-flash';
+  const requestedModel = options.model || 'gemini-2.0-flash';
+  const model = (!requestedModel || requestedModel.includes('gemini-2.5') || requestedModel.includes('gemini-3.8') || requestedModel === 'gemini-3.1-pro-preview')
+    ? 'gemini-2.0-flash'
+    : requestedModel;
   const temperature = options.temperature !== undefined ? options.temperature : 0.1;
   const useProxy = options.useProxy || false;
 

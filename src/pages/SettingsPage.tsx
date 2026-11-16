@@ -59,8 +59,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const [showKey, setShowKey] = useState<boolean>(false);
   const [aiModel, setAiModel] = useState<string>(() => {
     const saved = localStorage.getItem('chronoforge_ai_model');
-    if (!saved || saved.includes('gemini-2.5') || saved.includes('gemini-1.5')) {
-      return 'gemini-3.8-flash';
+    const VALID_MODELS = ['gemini-2.0-flash', 'gemini-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    if (!saved || !VALID_MODELS.includes(saved)) {
+      return 'gemini-2.0-flash';
     }
     return saved;
   });
@@ -179,16 +180,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       setAiStatusMessage(result.message);
 
       if (result.status === 'connected') {
-        addToast('Gemini API connection successful!', 'success');
+        addToast(result.message || 'Gemini API connection successful!', 'success');
         // Automatically save on verified test
         const uid = user?.uid || 'default_user';
         await saveAiKey(uid, aiKey);
       } else if (result.status === 'invalid') {
-        addToast('Gemini API key is invalid or unauthorized.', 'error');
+        addToast(result.message || 'Gemini API key is invalid or unauthorized.', 'error');
       } else if (result.status === 'ratelimited') {
-        addToast('Gemini API quota exceeded (429).', 'warning');
+        addToast(result.message || 'Gemini API quota exceeded (429).', 'warning');
       } else {
-        addToast('Gemini test connection failed.', 'error');
+        addToast(result.message || 'Gemini test connection failed.', 'error');
       }
     } catch (err: any) {
       setAiStatus('error');
@@ -365,9 +366,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               onChange={(e) => setAiModel(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-[#161224] border border-white/10 text-white text-xs focus:outline-none focus:border-purple-400 font-mono-code"
             >
-              <option value="gemini-3.8-flash">gemini-3.8-flash (Recommended, Fast &amp; Balanced)</option>
+              <option value="gemini-2.0-flash">gemini-2.0-flash (Recommended, Fast &amp; Balanced)</option>
               <option value="gemini-flash-latest">gemini-flash-latest (Always Latest Flash)</option>
-              <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (Pro Reasoning)</option>
+              <option value="gemini-1.5-flash">gemini-1.5-flash (Standard Lightweight)</option>
+              <option value="gemini-1.5-pro">gemini-1.5-pro (Deep Complex Reasoning)</option>
             </select>
           </div>
 

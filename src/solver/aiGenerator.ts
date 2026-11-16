@@ -207,7 +207,7 @@ export async function generateTimetableWithAi(
     // -------------------------------------------------------------
     options.onProgress?.({
       stage: 'calling_ai',
-      message: `Prompting Gemini (${options.model || 'gemini-3.8-flash'}) with responseSchema...`,
+      message: `Prompting Gemini (${options.model || 'gemini-2.0-flash'}) with responseSchema...`,
       progressPct: 40,
     });
 

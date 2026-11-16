@@ -4,6 +4,8 @@ import { PlasmaGlass } from '../components/PlasmaGlass';
 import { MoltenButton } from '../components/MoltenButton';
 import { ReferentialWarningModal } from '../components/ReferentialWarningModal';
 import { Modal } from '../components/ui/Modal';
+import { SmartImportModal } from '../components/importer/SmartImportModal';
+import { downloadSubjectsTemplate, exportCsvWithBom } from '../services/importer/templateGenerator';
 import {
   BookOpen,
   Plus,
@@ -76,6 +78,9 @@ export const SubjectsPage: React.FC = () => {
   // Delete Target for Referential Modal
   const [deleteTarget, setDeleteTarget] = useState<Subject | null>(null);
   const [dependencyInfo, setDependencyInfo] = useState<{ count: number; details: string[] }>({ count: 0, details: [] });
+
+  // Smart Importer Modal State
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Bulk Selection
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<ID[]>([]);
@@ -244,81 +249,36 @@ export const SubjectsPage: React.FC = () => {
     setSelectedSubjectIds([]);
   };
 
-  // CSV Export
+  // Export Subjects CSV (with UTF-8 BOM)
   const exportSubjectsCSV = () => {
-    const headers = ['Name', 'Code', 'Type', 'Color', 'DefaultPeriodsPerWeek', 'DoublePeriod', 'PreferMorning', 'MaxPerDay'];
-    const rows = subjects.map(s => [
-      `"${s.name}"`,
-      `"${s.code}"`,
+    const headers = [
+      'Subject Name',
+      'Short Code',
+      'Type',
+      'Default Periods Per Week',
+      'Requires Double Period',
+      'Prefer Morning',
+      'Max Per Day',
+      'Color',
+    ];
+    const rows = subjects.map((s) => [
+      s.name,
+      s.code,
       s.type,
-      `"${s.color}"`,
-      s.defaultPeriodsPerWeek || 5,
-      s.doublePeriod ? 'true' : 'false',
-      s.preferMorning ? 'true' : 'false',
-      s.maxPerDay || 2,
+      s.defaultPeriodsPerWeek || s.periodsPerWeek,
+      s.doublePeriod || s.requiresDoublePeriod ? 'Yes' : 'No',
+      s.preferMorning || s.isMorningPreferred ? 'Yes' : 'No',
+      s.maxPerDay,
+      s.color,
     ]);
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${project.school.name.replace(/\s+/g, '_')}_Subjects.csv`;
-    link.click();
-    addToast('Subjects exported to CSV successfully.', 'success');
+    exportCsvWithBom(`${project.school.name.replace(/\s+/g, '_')}_Subjects`, headers, rows);
+    addToast('Subjects catalog exported to CSV with UTF-8 BOM.', 'success');
   };
 
   // Download Template
-  const downloadTemplate = () => {
-    const csv = 'Name,Code,Type,Color,DefaultPeriodsPerWeek,DoublePeriod,PreferMorning,MaxPerDay\nPhysics,PHY,lab,#3b82f6,4,true,false,2\nMathematics,MATH,theory,#f97316,6,false,true,2\nPhysical Education,PE,sports,#10b981,2,false,false,2';
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'ChronoForge_Subjects_Template.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // CSV Import
-  const handleCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
-        const lines = text.split('\n').filter((l) => l.trim().length > 0);
-        let imported = 0;
-
-        lines.slice(1).forEach((line) => {
-          const parts = line.split(',').map(p => p.trim().replace(/^"|"$/g, ''));
-          if (parts.length >= 2 && parts[0] && parts[1]) {
-            addSubject({
-              name: parts[0],
-              code: parts[1].toUpperCase(),
-              type: (parts[2]?.toLowerCase() as Subject['type']) || 'theory',
-              color: parts[3] || PRESET_COLORS[imported % PRESET_COLORS.length],
-              defaultPeriodsPerWeek: parts[4] ? parseInt(parts[4], 10) : 5,
-              doublePeriod: parts[5]?.toLowerCase() === 'true',
-              preferMorning: parts[6]?.toLowerCase() === 'true',
-              maxPerDay: parts[7] ? parseInt(parts[7], 10) : 2,
-            });
-            imported++;
-          }
-        });
-
-        if (imported > 0) {
-          addToast(`Imported ${imported} subjects from CSV!`, 'success');
-        } else {
-          addToast('No valid subject rows found in CSV.', 'warning');
-        }
-      } catch {
-        addToast('Failed to parse subjects CSV.', 'error');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+  const downloadTemplate = (format: 'xlsx' | 'csv' = 'xlsx') => {
+    downloadSubjectsTemplate(format);
+    addToast(`Downloaded subjects ${format.toUpperCase()} template with sample data.`, 'info');
   };
 
   return (
@@ -349,18 +309,20 @@ export const SubjectsPage: React.FC = () => {
             Add Common Subjects Preset
           </MoltenButton>
 
-          <label className="cursor-pointer">
-            <input type="file" accept=".csv" onChange={handleCsvImport} className="hidden" />
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors">
-              <Upload className="w-3.5 h-3.5" /> Import CSV
-            </span>
-          </label>
+          <MoltenButton
+            size="sm"
+            variant="glass"
+            onClick={() => setIsImportModalOpen(true)}
+            leftIcon={<Upload className="w-3.5 h-3.5 text-amber-400" />}
+          >
+            Import Excel / CSV
+          </MoltenButton>
 
           <MoltenButton size="sm" variant="glass" onClick={exportSubjectsCSV} leftIcon={<Download className="w-3.5 h-3.5" />}>
             Export CSV
           </MoltenButton>
 
-          <MoltenButton size="sm" variant="ghost" onClick={downloadTemplate}>
+          <MoltenButton size="sm" variant="ghost" onClick={() => downloadTemplate('xlsx')}>
             Template
           </MoltenButton>
         </div>
@@ -457,10 +419,10 @@ export const SubjectsPage: React.FC = () => {
 
           {/* Action buttons row with content-based sizing */}
           <div className="flex flex-wrap items-center gap-3 pt-1">
-            <MoltenButton type="submit" size="md" variant="molten" className="px-5">
+            <MoltenButton type="submit" size="md" variant="molten" className="px-5 shrink-0 whitespace-nowrap min-w-fit w-auto">
               Add Subject
             </MoltenButton>
-            <MoltenButton type="button" size="md" variant="glass" onClick={handleAddAnother} className="px-4">
+            <MoltenButton type="button" size="md" variant="glass" onClick={handleAddAnother} className="px-4 shrink-0 whitespace-nowrap min-w-fit w-auto">
               Add Another
             </MoltenButton>
           </div>
@@ -801,6 +763,13 @@ export const SubjectsPage: React.FC = () => {
         details={dependencyInfo.details}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Smart Excel & CSV Importer Modal */}
+      <SmartImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        entity="subjects"
       />
     </div>
   );

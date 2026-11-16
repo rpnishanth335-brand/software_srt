@@ -172,11 +172,29 @@ export const FeasibilityPage: React.FC = () => {
                 <MoltenButton
                   size="sm"
                   variant="glass"
-                  onClick={() => setCurrentRoute(err.code.includes('TEACHER') ? 'staff' : 'classes')}
+                  onClick={() => {
+                    if (err.code === 'ERR_NO_CLASSES_CREATED') {
+                      if (project.subjects.length === 0) setCurrentRoute('subjects');
+                      else if (project.teachers.length === 0) setCurrentRoute('staff');
+                      else setCurrentRoute('classes');
+                    } else if (err.code.includes('TEACHER')) {
+                      setCurrentRoute('staff');
+                    } else {
+                      setCurrentRoute('classes');
+                    }
+                  }}
                   rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                   className="shrink-0 text-amber-300 border-amber-500/30 hover:bg-amber-500/10"
                 >
-                  Fix in {err.code.includes('TEACHER') ? 'Staff' : 'Classes'}
+                  Fix in {
+                    err.code === 'ERR_NO_CLASSES_CREATED' && project.subjects.length === 0
+                      ? 'Subjects'
+                      : err.code === 'ERR_NO_CLASSES_CREATED' && project.teachers.length === 0
+                      ? 'Staff'
+                      : err.code.includes('TEACHER')
+                      ? 'Staff'
+                      : 'Classes'
+                  }
                 </MoltenButton>
               </PlasmaGlass>
             ))}
