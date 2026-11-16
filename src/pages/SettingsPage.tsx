@@ -326,7 +326,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               type={showKey ? 'text' : 'password'}
               value={aiKey}
               onChange={(e) => setAiKey(e.target.value)}
-              placeholder="Paste AIzaSy... API key"
+              placeholder="Paste Gemini API key (AQ... or AIzaSy...)"
               className="w-full pl-3 pr-24 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white text-xs font-mono-code focus:outline-none focus:border-amber-400"
             />
             <div className="absolute right-1.5 flex items-center gap-1">
